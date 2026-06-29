@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EnergyAI — Campus Electricity Forecasting Dashboard</title>
+    <meta name="description" content="AI-powered campus electricity forecasting with weather-aware predictions, anomaly detection, and cost optimization.">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="boltGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#86efac;stop-opacity:1" />
+                            <stop offset="50%" style="stop-color:#10b981;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#047857;stop-opacity:1" />
+                        </linearGradient>
+                        <filter id="glow">
+                            <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+                            <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                    </defs>
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" 
+                          fill="url(#boltGradient)" 
+                          stroke="#047857" 
+                          stroke-width="0.5"
+                          filter="url(#glow)"/>
+                </svg>
+                <span>EnergyAI</span>
+            </div>
+            <div class="sidebar-controls">
+                <button class="sidebar-control-btn" onclick="toggleSidebar()" title="Minimize sidebar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="dashboard.html" class="nav-item active">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                </svg>
+                <span>Dashboard</span>
+            </a>
+            <a href="analytics.html" class="nav-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+                <span>Analytics</span>
+            </a>
+            <a href="models.html" class="nav-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+                </svg>
+                <span>Models</span>
+            </a>
+            <a href="reports.html" class="nav-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                </svg>
+                <span>Reports</span>
+            </a>
+            <a href="settings.html" class="nav-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+                <span>Settings</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-profile">
+                <div class="avatar">AD</div>
+                <div class="user-info">
+                    <div class="user-name">Admin User</div>
+                    <div class="user-role">Administrator</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Expand Button (shown when sidebar is minimized) -->
+    <button class="sidebar-expand-btn" id="sidebarExpandBtn" onclick="toggleSidebar()" title="Expand sidebar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+        </svg>
+    </button>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1>Energy Forecasting Dashboard</h1>
+                <p class="subtitle">AI-powered campus energy analytics with confidence intervals & anomaly detection</p>
+            </div>
+            <div class="header-right">
+                <button class="btn-icon" id="themeToggle" onclick="toggleTheme()">
+                    <svg id="sunIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                        <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </svg>
+                    <svg id="moonIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+                <button class="btn-icon" id="notificationBtn" onclick="toggleNotifications()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                    <span class="notification-badge" id="notificationBadge">0</span>
+                </button>
+                <div class="notification-dropdown" id="notificationDropdown">
+                    <div class="notification-header">
+                        <h4>Activity Log</h4>
+                        <button class="btn-text-small" onclick="clearNotifications()">Clear All</button>
+                    </div>
+                    <div class="notification-body" id="statusLog"></div>
+                </div>
+                <button class="btn-primary" onclick="exportForecastCSV()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Export CSV
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon purple">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                    </svg>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-label">Avg Daily Load</div>
+                    <div class="stat-value" id="currentLoadValue">— kW</div>
+                    <div class="stat-change" id="currentLoadSub">Awaiting forecast</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                    </svg>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-label">Forecast Accuracy</div>
+                    <div class="stat-value" id="forecastAccuracyValue">—</div>
+                    <div class="stat-change" id="forecastAccuracySub">Train model to see accuracy</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="1" x2="12" y2="23"/>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-label">Est. Annual Savings</div>
+                    <div class="stat-value" id="annualSavingsValue">—</div>
+                    <div class="stat-change">Via forecast-driven optimization</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon orange">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-label">Model Status</div>
+                    <div class="stat-value" id="modelStatusValue">Idle</div>
+                    <div class="stat-change" id="modelStatusSub">No model trained yet</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="content-grid">
+            <!-- Daily Prediction Input Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>📊 Data Input & Training</h3>
+                    <button class="btn-text" onclick="switchToSimpleMode()">Simple Mode</button>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label>Prediction Mode</label>
+                        <select id="predictionMode" onchange="togglePredictionMode()" class="input-field">
+                            <option value="daily">Daily (Weather + Schedule)</option>
+                            <option value="simple">Simple (Historical Only)</option>
+                        </select>
+                    </div>
+                    
+                    <div id="dailyInputs">
+                        <!-- CSV Drag & Drop -->
+                        <div class="csv-upload-zone" id="csvDropZone">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            <span>Drag & drop CSV file here, or click to browse</span>
+                            <input type="file" id="csvFileInput" accept=".csv" style="display:none">
+                        </div>
+                        <div class="csv-file-info" id="csvFileInfo" style="display:none">
+                            <span>📄 <strong id="csvFileName"></strong></span>
+                            <button class="btn-text-small" onclick="document.getElementById('csvFileInfo').style.display='none'">✕</button>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Historical Daily Data (CSV format)</label>
+                            <textarea id="dailyDataInput" rows="3" placeholder="Date,Consumption,Temperature,Humidity,Rainfall,HasClasses&#10;2024-09-01,1450,28.5,72,0,1&#10;2024-09-02,1520,29.2,68,0,1"></textarea>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Tomorrow's Temperature (°C)</label>
+                                <input type="number" id="tomorrowTemp" value="28" step="0.1" class="input-field">
+                            </div>
+                            <div class="form-group">
+                                <label>Tomorrow's Humidity (%)</label>
+                                <input type="number" id="tomorrowHumidity" value="70" step="1" class="input-field">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Tomorrow's Rainfall (mm)</label>
+                                <input type="number" id="tomorrowRainfall" value="0" step="0.1" class="input-field">
+                            </div>
+                            <div class="form-group">
+                                <label>Tomorrow Has Classes?</label>
+                                <select id="tomorrowClasses" class="input-field">
+                                    <option value="1">Yes</option>
+                                    <option value="0">No</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="simpleInputs" style="display: none;">
+                        <div class="form-group">
+                            <label>Energy Consumption Data</label>
+                            <textarea id="dataInput" rows="4" placeholder="Enter comma-separated values..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button onclick="generateSampleDailyData()" class="btn-secondary">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                            </svg>
+                            Generate Sample
+                        </button>
+                        <button id="trainBtn" onclick="trainDailyModel()" class="btn-primary">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="5 3 19 12 5 21 5 3"/>
+                            </svg>
+                            Train Model
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Metrics -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>🎯 Model Performance</h3>
+                    <span class="badge success">Computed</span>
+                </div>
+                <div class="card-body">
+                    <div class="metrics-grid">
+                        <div class="metric-item">
+                            <div class="metric-label">RMSE</div>
+                            <div class="metric-value" id="rmse">—</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">MAE</div>
+                            <div class="metric-value" id="mae">—</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">MAPE</div>
+                            <div class="metric-value" id="mape">—</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">R² Score</div>
+                            <div class="metric-value" id="r2">—</div>
+                        </div>
+                        <div class="metric-item highlight-metric">
+                            <div class="metric-label">Directional Acc.</div>
+                            <div class="metric-value" id="directionalAcc">—</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Forecast Controls -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>⚙️ Forecast Configuration</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label>Forecast Horizon</label>
+                        <select id="forecastHorizon" class="input-field">
+                            <option value="1">Tomorrow (1 day)</option>
+                            <option value="7" selected>Next Week (7 days)</option>
+                            <option value="14">Next 2 Weeks (14 days)</option>
+                            <option value="30">Next Month (30 days)</option>
+                        </select>
+                    </div>
+                    <button id="forecastBtn" onclick="makeDailyForecast()" class="btn-primary full-width">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        Generate Daily Forecast
+                    </button>
+                </div>
+            </div>
+
+            <!-- Weekly Forecast Summary with Confidence -->
+            <div class="card savings-card">
+                <div class="card-header">
+                    <h3>📅 Forecast Summary</h3>
+                </div>
+                <div class="card-body">
+                    <div class="savings-grid">
+                        <div class="savings-item">
+                            <div class="savings-icon">⚡</div>
+                            <div class="savings-content">
+                                <div class="savings-label">Total Consumption</div>
+                                <div class="savings-value" id="weeklyConsumption">—</div>
+                            </div>
+                        </div>
+                        <div class="savings-item">
+                            <div class="savings-icon">💵</div>
+                            <div class="savings-content">
+                                <div class="savings-label">Total Cost</div>
+                                <div class="savings-value highlight" id="weeklyCost">—</div>
+                            </div>
+                        </div>
+                        <div class="savings-item">
+                            <div class="savings-icon">📊</div>
+                            <div class="savings-content">
+                                <div class="savings-label">Recommended Budget</div>
+                                <div class="savings-value" id="recommendedBudget">—</div>
+                            </div>
+                        </div>
+                        <div class="savings-item confidence-item">
+                            <div class="savings-icon">🎯</div>
+                            <div class="savings-content">
+                                <div class="savings-label">95% Confidence Range</div>
+                                <div class="savings-value confidence-range" id="confidenceRange">—</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="savings-note">
+                        Includes 10% contingency buffer • Confidence intervals from ensemble predictions
+                    </div>
+                </div>
+            </div>
+
+            <!-- Potential Savings -->
+            <div class="card savings-card">
+                <div class="card-header">
+                    <h3>💰 Optimization Savings</h3>
+                </div>
+                <div class="card-body">
+                    <div class="savings-grid">
+                        <div class="savings-item">
+                            <div class="savings-icon">📅</div>
+                            <div class="savings-content">
+                                <div class="savings-label">Daily Savings</div>
+                                <div class="savings-value" id="dailySavings">—</div>
+                                <div class="savings-sublabel" id="dailySavingsKwh">—</div>
+                            </div>
+                        </div>
+                        <div class="savings-item">
+                            <div class="savings-icon">📊</div>
+                            <div class="savings-content">
+                                <div class="savings-label">Weekly Savings</div>
+                                <div class="savings-value highlight" id="weeklySavings">—</div>
+                                <div class="savings-sublabel" id="weeklySavingsKwh">—</div>
+                            </div>
+                        </div>
+                        <div class="savings-item">
+                            <div class="savings-icon">🎯</div>
+                            <div class="savings-content">
+                                <div class="savings-label">Yearly Savings</div>
+                                <div class="savings-value" id="yearlySavings">—</div>
+                                <div class="savings-sublabel" id="yearlySavingsKwh">—</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="savings-note">
+                        Based on 5–8% optimization through accurate forecasting and schedule management
+                    </div>
+                </div>
+            </div>
+
+            <!-- Anomaly Detection Panel -->
+            <div class="card anomaly-card">
+                <div class="card-header">
+                    <h3>🚨 Anomaly Detection</h3>
+                    <span class="anomaly-count-badge" id="anomalyCount" style="display:none">0</span>
+                </div>
+                <div class="card-body">
+                    <div id="anomalyList" class="anomaly-list">
+                        <div class="anomaly-empty">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                            </svg>
+                            <span>Train model to detect anomalies</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Peak Load Analysis -->
+            <div class="card peak-card">
+                <div class="card-header">
+                    <h3>⚡ Peak Load Analysis</h3>
+                </div>
+                <div class="card-body">
+                    <div id="peakInfo" class="peak-grid">
+                        <div class="peak-empty">Generate a forecast to see peak load analysis</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart -->
+            <div class="card chart-card">
+                <div class="card-header">
+                    <h3>Energy Demand Forecast</h3>
+                    <div class="chart-controls">
+                        <button class="btn-text active" onclick="setChartView(1, event)">24H</button>
+                        <button class="btn-text" onclick="setChartView(7, event)">7D</button>
+                        <button class="btn-text" onclick="setChartView(30, event)">30D</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-legend-custom">
+                        <span class="legend-item"><span class="legend-dot green"></span> Class Day</span>
+                        <span class="legend-item"><span class="legend-dot orange"></span> No Class</span>
+                        <span class="legend-item"><span class="legend-dot red"></span> Peak Day</span>
+                        <span class="legend-item"><span class="legend-dot band"></span> 95% Confidence</span>
+                    </div>
+                    <canvas id="forecastChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="auth.js"></script>
+    <script src="dashboard-fixed.js"></script>
+</body>
+</html>

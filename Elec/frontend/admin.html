@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - EnergyAI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="dashboard.css">
+    <style>
+        .approval-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .pending-user {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .user-info h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        .user-info p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+        .user-actions {
+            display: flex;
+            gap: 12px;
+        }
+        .btn-approve {
+            background: #10b981;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .btn-reject {
+            background: #ef4444;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .status-approved {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .status-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .login-box {
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+        }
+        .login-box h2 {
+            text-align: center;
+            margin-bottom: 24px;
+            color: #111827;
+        }
+        .login-box input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .login-box button {
+            width: 100%;
+            padding: 12px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .error {
+            color: #ef4444;
+            font-size: 13px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-box">
+        <h2>🔒 Admin Login</h2>
+        <div id="loginError" class="error" style="display: none;"></div>
+        <input type="password" id="adminPassword" placeholder="Enter admin password" />
+        <button onclick="adminLogin()">Login</button>
+        <p style="text-align: center; margin-top: 16px; font-size: 13px; color: #6b7280;">
+            Default password: <strong>admin123</strong>
+        </p>
+        <p style="text-align: center; margin-top: 8px;">
+            <a href="login.html" style="color: #10b981; text-decoration: none;">← Back to User Login</a>
+        </p>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="adminDashboard" style="display: none;">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="boltGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#86efac;stop-opacity:1" />
+                                <stop offset="50%" style="stop-color:#10b981;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#047857;stop-opacity:1" />
+                            </linearGradient>
+                            <filter id="glow">
+                                <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" 
+                              fill="url(#boltGradient)" 
+                              stroke="#047857" 
+                              stroke-width="0.5"
+                              filter="url(#glow)"/>
+                    </svg>
+                    <span>EnergyAI Admin</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                    <span>User Approvals</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-profile" onclick="adminLogout()" style="cursor: pointer;">
+                    <div class="avatar">SA</div>
+                    <div class="user-info">
+                        <div class="user-name">Super Admin</div>
+                        <div class="user-role">Click to logout</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <h1>User Approval Management</h1>
+                    <p class="subtitle">Review and approve new user registrations</p>
+                </div>
+                <div class="header-right">
+                    <button class="btn-primary" onclick="loadUsers()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"/>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
+            </header>
+
+            <div class="approval-container">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Pending Approvals</h3>
+                        <span class="badge" style="background: #fef3c7; color: #92400e;" id="pendingCount">0 Pending</span>
+                    </div>
+                    <div class="card-body" id="pendingUsers">
+                        <p style="text-align: center; color: var(--text-secondary); padding: 40px;">
+                            No pending users
+                        </p>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 24px;">
+                    <div class="card-header">
+                        <h3>All Users</h3>
+                        <span class="badge success" id="totalCount">0 Total</span>
+                    </div>
+                    <div class="card-body" id="allUsers">
+                        <p style="text-align: center; color: var(--text-secondary); padding: 40px;">
+                            No users yet
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const ADMIN_PASSWORD = 'admin123';
+
+        // Check if admin is logged in
+        function checkAdminAuth() {
+            const isAdmin = localStorage.getItem('isAdmin') === 'true';
+            if (isAdmin) {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('adminDashboard').style.display = 'block';
+                loadUsers();
+            }
+        }
+
+        // Admin login
+        function adminLogin() {
+            const password = document.getElementById('adminPassword').value;
+            const errorDiv = document.getElementById('loginError');
+
+            if (password === ADMIN_PASSWORD) {
+                localStorage.setItem('isAdmin', 'true');
+                checkAdminAuth();
+            } else {
+                errorDiv.textContent = 'Invalid password';
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        // Admin logout
+        function adminLogout() {
+            if (confirm('Logout?')) {
+                localStorage.removeItem('isAdmin');
+                location.reload();
+            }
+        }
+
+        // Load users from localStorage
+        function loadUsers() {
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            
+            const pending = users.filter(u => u.status === 'pending');
+            const approved = users.filter(u => u.status === 'approved');
+            const rejected = users.filter(u => u.status === 'rejected');
+
+            document.getElementById('pendingCount').textContent = `${pending.length} Pending`;
+            document.getElementById('totalCount').textContent = `${users.length} Total`;
+
+            // Display pending users
+            const pendingHTML = pending.length === 0 
+                ? '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">No pending approvals</p>'
+                : pending.map(u => createUserCard(u)).join('');
+            document.getElementById('pendingUsers').innerHTML = pendingHTML;
+
+            // Display all users
+            const allHTML = [...approved, ...rejected].length === 0
+                ? '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">No users yet</p>'
+                : [...approved.map(u => createUserCard(u)), ...rejected.map(u => createUserCard(u))].join('');
+            document.getElementById('allUsers').innerHTML = allHTML;
+        }
+
+        // Create user card
+        function createUserCard(user) {
+            const statusClass = `status-${user.status}`;
+            const statusText = user.status.charAt(0).toUpperCase() + user.status.slice(1);
+            
+            return `
+                <div class="pending-user">
+                    <div class="user-info">
+                        <h3>${user.name}</h3>
+                        <p>📧 ${user.email}</p>
+                        <p>📅 Registered: ${new Date(user.created).toLocaleDateString()}</p>
+                        <span class="status-badge ${statusClass}">${statusText}</span>
+                    </div>
+                    <div class="user-actions">
+                        ${user.status === 'pending' ? `
+                            <button class="btn-approve" onclick="approveUser('${user.email}')">
+                                ✓ Approve
+                            </button>
+                            <button class="btn-reject" onclick="rejectUser('${user.email}')">
+                                ✗ Reject
+                            </button>
+                        ` : user.status === 'approved' ? `
+                            <button class="btn-reject" onclick="rejectUser('${user.email}')">
+                                Revoke Access
+                            </button>
+                        ` : `
+                            <button class="btn-approve" onclick="approveUser('${user.email}')">
+                                Restore Access
+                            </button>
+                        `}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Approve user
+        function approveUser(email) {
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const user = users.find(u => u.email === email);
+            if (user) {
+                user.status = 'approved';
+                localStorage.setItem('users', JSON.stringify(users));
+                alert('User approved successfully!');
+                loadUsers();
+            }
+        }
+
+        // Reject user
+        function rejectUser(email) {
+            if (!confirm('Are you sure you want to reject this user?')) return;
+            
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const user = users.find(u => u.email === email);
+            if (user) {
+                user.status = 'rejected';
+                localStorage.setItem('users', JSON.stringify(users));
+                alert('User rejected successfully!');
+                loadUsers();
+            }
+        }
+
+        // Initialize
+        checkAdminAuth();
+    </script>
+</body>
+</html>
