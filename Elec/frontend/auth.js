@@ -5,7 +5,8 @@ function checkSimpleAuth() {
     const currentUser = localStorage.getItem('currentUser');
     
     if (!currentUser) {
-        // Not logged in, redirect to login
+        const currentPage = window.location.pathname.split('/').pop() || 'dashboard.html';
+        localStorage.setItem('returnTo', currentPage);
         window.location.href = 'login.html';
         return;
     }
@@ -35,14 +36,27 @@ function checkSimpleAuth() {
 function simpleLogout() {
     if (confirm('Do you want to logout?')) {
         localStorage.removeItem('currentUser');
+        localStorage.removeItem('returnTo');
         window.location.href = 'login.html';
     }
+}
+
+function removeTechnicalNavEntries() {
+    const navItems = document.querySelectorAll('.sidebar-nav a, .sidebar-nav button');
+    navItems.forEach((item) => {
+        const text = item.textContent?.trim().toLowerCase();
+        const href = item.getAttribute('href') || '';
+        if (text === 'models' || href.includes('models.html')) {
+            item.remove();
+        }
+    });
 }
 
 // Add logout functionality to user profile
 document.addEventListener('DOMContentLoaded', () => {
     // Check auth on page load
     checkSimpleAuth();
+    removeTechnicalNavEntries();
     
     // Add click handler to user profile
     const userProfile = document.querySelector('.user-profile');

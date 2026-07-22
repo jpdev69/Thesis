@@ -290,12 +290,16 @@
             
             // User is approved, login
             localStorage.setItem('currentUser', JSON.stringify(user));
-            window.location.href = 'dashboard.html';
+            const returnTo = localStorage.getItem('returnTo') || 'dashboard.html';
+            localStorage.removeItem('returnTo');
+            window.location.href = returnTo;
         });
 
         // Check if already logged in
         if (localStorage.getItem('currentUser')) {
-            window.location.href = 'dashboard.html';
+            const returnTo = localStorage.getItem('returnTo') || 'dashboard.html';
+            localStorage.removeItem('returnTo');
+            window.location.href = returnTo;
         }
     </script>
 </body>
