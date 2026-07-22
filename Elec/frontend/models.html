@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
     <title>Models - EnergyAI</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="dashboard.css">
@@ -36,11 +38,7 @@
             </div>
         </div>
         <nav class="sidebar-nav">
-            <a href="dashboard.html" class="nav-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span>Dashboard</span></a>
-            <a href="analytics.html" class="nav-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>Analytics</span></a>
-            <a href="models.html" class="nav-item active"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg><span>Models</span></a>
-            <a href="reports.html" class="nav-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg><span>Reports</span></a>
-            <a href="settings.html" class="nav-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg><span>Settings</span></a>
+            <a href="models.html" class="nav-item active"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path d="M12 3v18"/><path d="M4 7.5l8 4.5 8-4.5"/></svg><span>Models</span></a>
         </nav>
         <div class="sidebar-footer">
             <div class="user-profile">
@@ -56,8 +54,8 @@
     <main class="main-content">
         <header class="header">
             <div class="header-left">
-                <h1>AI Models</h1>
-                <p class="subtitle">Manage and monitor forecasting models</p>
+                <h1>Technical Model Operations</h1>
+                <p class="subtitle">Manage training, evaluation, and deployment for forecasting models</p>
             </div>
             <div class="header-right">
                 <button class="btn-icon" id="themeToggle" onclick="toggleTheme()">
@@ -88,153 +86,523 @@
         <div class="content-grid">
             <div class="card" style="grid-column: span 12;">
                 <div class="card-header">
-                    <h3>Active Models</h3>
-                    <span class="badge success">3 Running</span>
+                    <h3>Training Input</h3>
+                    <span class="badge">Technical</span>
                 </div>
                 <div class="card-body">
+                    <p style="margin: 0 0 16px; color: var(--text-secondary); line-height: 1.6;">
+                        This area is intended for technical staff. Client-facing pages only display forecast outputs and operational insights, while model training and evaluation remain here.
+                    </p>
+                    <div class="csv-upload-zone" id="modelCsvDropZone">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        <span>Drag & drop CSV training data here, or click to browse</span>
+                        <input type="file" id="modelCsvFileInput" accept=".csv" style="display:none">
+                    </div>
+                    <div class="csv-file-info" id="modelFileInfo" style="display:none">
+                        <span>📄 <strong id="modelFileName"></strong></span>
+                        <button class="btn-text-small" onclick="document.getElementById('modelFileInfo').style.display='none'">✕</button>
+                    </div>
+                    <div class="form-group">
+                        <label>Historical daily data (CSV format)</label>
+                        <textarea id="modelTrainingDataInput" rows="6" placeholder="Date,Consumption,Temperature,Humidity,Rainfall,HasClasses&#10;2024-09-01,1450,28.5,72,0,1&#10;2024-09-02,1520,29.2,68,0,1"></textarea>
+                    </div>
+                    <div class="button-group">
+                        <button onclick="generateModelSampleData()" class="btn-secondary">Generate Sample</button>
+                        <button id="modelTrainBtn" onclick="trainTechnicalModel()" class="btn-primary">Train Model</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="grid-column: span 6;">
+                <div class="card-header">
+                    <h3>Training Results</h3>
+                </div>
+                <div class="card-body">
+                    <div class="metrics-grid">
+                        <div class="metric-item">
+                            <div class="metric-label">RMSE</div>
+                            <div class="metric-value" id="techRmse">—</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">MAE</div>
+                            <div class="metric-value" id="techMae">—</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">MAPE</div>
+                            <div class="metric-value" id="techMape">—</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">R² Score</div>
+                            <div class="metric-value" id="techR2">—</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="grid-column: span 12;">
+                <div class="card-header">
+                    <h3>Technical Model Catalog</h3>
+                    <span class="badge success" id="modelCatalogBadge">Loading...</span>
+                </div>
+                <div class="card-body">
+                    <p style="margin: 0 0 16px; color: var(--text-secondary); line-height: 1.6;">
+                        Comprehensive comparison of current model vs baseline methods. Train a model to see performance metrics.
+                    </p>
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead>
                             <tr style="border-bottom: 1px solid var(--border-color); text-align: left;">
                                 <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">Model Name</th>
                                 <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">Type</th>
-                                <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">Accuracy</th>
-                                <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">Last Trained</th>
+                                <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">RMSE</th>
+                                <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">MAE</th>
+                                <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">R² Score</th>
+                                <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">Improvement</th>
                                 <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">Status</th>
-                                <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr style="border-bottom: 1px solid var(--border-color);">
-                                <td style="padding: 16px; font-weight: 500;">Hybrid LSTM-SVM</td>
-                                <td style="padding: 16px;">Ensemble</td>
-                                <td style="padding: 16px; color: #10b981; font-weight: 600;">94.8%</td>
-                                <td style="padding: 16px;">2 hours ago</td>
-                                <td style="padding: 16px;"><span class="badge success">Active</span></td>
-                                <td style="padding: 16px;"><button class="btn-text">View Details</button></td>
-                            </tr>
-                            <tr style="border-bottom: 1px solid var(--border-color);">
-                                <td style="padding: 16px; font-weight: 500;">Enhanced LSTM</td>
-                                <td style="padding: 16px;">Deep Learning</td>
-                                <td style="padding: 16px; color: #10b981; font-weight: 600;">92.3%</td>
-                                <td style="padding: 16px;">5 hours ago</td>
-                                <td style="padding: 16px;"><span class="badge success">Active</span></td>
-                                <td style="padding: 16px;"><button class="btn-text">View Details</button></td>
-                            </tr>
+                        <tbody id="modelCatalogTableBody">
                             <tr>
-                                <td style="padding: 16px; font-weight: 500;">Ridge Regression</td>
-                                <td style="padding: 16px;">Baseline</td>
-                                <td style="padding: 16px; color: #f59e0b; font-weight: 600;">87.1%</td>
-                                <td style="padding: 16px;">1 day ago</td>
-                                <td style="padding: 16px;"><span class="badge" style="background: var(--gray-100); color: var(--text-secondary);">Standby</span></td>
-                                <td style="padding: 16px;"><button class="btn-text">View Details</button></td>
+                                <td colspan="7" style="padding: 40px; text-align: center; color: var(--text-secondary);">
+                                    Train a model to populate catalog with performance comparisons
+                                </td>
                             </tr>
                         </tbody>
                     </table>
+                    
+                    <!-- Performance Insight -->
+                    <div id="catalogInsight" style="margin-top: 16px; padding: 16px; background: var(--bg-tertiary); border-radius: 8px; border-left: 4px solid #94a3b8; display: none;">
+                        <div style="display: flex; align-items: start; gap: 12px;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="16" x2="12" y2="12"/>
+                                <line x1="12" y1="8" x2="12.01" y2="8"/>
+                            </svg>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; margin-bottom: 4px;">Model Insight</div>
+                                <div id="catalogInsightText" style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">
+                                    Comparing multiple models helps identify which approach works best for your data.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Baseline Explanation -->
+                    <div style="margin-top: 16px; padding: 12px; background: var(--bg-tertiary); border-radius: 6px; font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
+                        <strong style="color: var(--text-primary);">Baseline Methods:</strong>
+                        <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+                            <li><strong>Persistence (Naive):</strong> Predicts next value = current value (simplest forecast)</li>
+                            <li><strong>Historical Mean:</strong> Always predicts the historical average</li>
+                            <li><strong>Linear Regression:</strong> Simple linear trend model</li>
+                            <li><strong>Daily Predictor:</strong> Your trained model with weather & schedule features</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
 
             <div class="card" style="grid-column: span 6;">
                 <div class="card-header">
-                    <h3>Model Performance</h3>
+                    <h3>Evaluation Metrics</h3>
                 </div>
                 <div class="card-body">
                     <div style="margin-bottom: 20px;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                             <span style="font-size: 14px;">RMSE</span>
-                            <span style="font-weight: 600;">3.42</span>
+                            <span id="evalRmseValue" style="font-weight: 600;">—</span>
                         </div>
                         <div style="background: var(--bg-tertiary); height: 8px; border-radius: 4px; overflow: hidden;">
-                            <div style="background: #10b981; height: 100%; width: 85%;"></div>
+                            <div id="evalRmseBar" style="background: #10b981; height: 100%; width: 0%; transition: width 0.3s ease;"></div>
                         </div>
                     </div>
                     <div style="margin-bottom: 20px;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                             <span style="font-size: 14px;">MAE</span>
-                            <span style="font-weight: 600;">2.87</span>
+                            <span id="evalMaeValue" style="font-weight: 600;">—</span>
                         </div>
                         <div style="background: var(--bg-tertiary); height: 8px; border-radius: 4px; overflow: hidden;">
-                            <div style="background: #14b8a6; height: 100%; width: 90%;"></div>
+                            <div id="evalMaeBar" style="background: #14b8a6; height: 100%; width: 0%; transition: width 0.3s ease;"></div>
                         </div>
                     </div>
                     <div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                             <span style="font-size: 14px;">R² Score</span>
-                            <span style="font-weight: 600;">0.948</span>
+                            <span id="evalR2Value" style="font-weight: 600;">—</span>
                         </div>
                         <div style="background: var(--bg-tertiary); height: 8px; border-radius: 4px; overflow: hidden;">
-                            <div style="background: #22c55e; height: 100%; width: 95%;"></div>
+                            <div id="evalR2Bar" style="background: #22c55e; height: 100%; width: 0%; transition: width 0.3s ease;"></div>
                         </div>
+                    </div>
+                    <div style="margin-top: 16px; padding: 12px 14px; background: var(--bg-tertiary); border-radius: 8px; font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+                        <strong style="color: var(--text-primary);">Legend:</strong> lower RMSE/MAE is better; higher R² is better. Typical targets are RMSE &lt; 5, MAE &lt; 4, R² &gt; 0.90.
                     </div>
                 </div>
             </div>
 
-            <div class="card" style="grid-column: span 6;">
-                <div class="card-header">
-                    <h3>Training History</h3>
-                </div>
-                <div class="card-body">
-                    <div style="display: flex; flex-direction: column; gap: 16px;">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%;"></div>
-                            <div style="flex: 1;">
-                                <div style="font-weight: 500; margin-bottom: 4px;">Model retrained successfully</div>
-                                <div style="font-size: 13px; color: var(--text-secondary);">2 hours ago • 1,250 samples</div>
-                            </div>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%;"></div>
-                            <div style="flex: 1;">
-                                <div style="font-weight: 500; margin-bottom: 4px;">Hyperparameter optimization completed</div>
-                                <div style="font-size: 13px; color: var(--text-secondary);">5 hours ago • Improved by 2.3%</div>
-                            </div>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <div style="width: 8px; height: 8px; background: #94a3b8; border-radius: 50%;"></div>
-                            <div style="flex: 1;">
-                                <div style="font-weight: 500; margin-bottom: 4px;">New dataset integrated</div>
-                                <div style="font-size: 13px; color: var(--text-secondary);">1 day ago • 3 buildings added</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
         </div>
     </main>
 
-    <script src="auth.js"></script>
+    <script src="auth.js?v=20260704"></script>
+    <script src="dashboard-fixed.js?v=20260704"></script>
     <script>
-        // Theme toggle functionality
-        function toggleTheme() {
-            const html = document.documentElement;
-            const currentTheme = html.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        function generateModelSampleData() {
+            const sampleData = `Date,Consumption,Temperature,Humidity,Rainfall,HasClasses
+2024-09-01,1450,28.5,72,0,1
+2024-09-02,1520,29.2,68,0,1
+2024-09-03,1480,27.8,75,5.2,1
+2024-09-04,1510,28.9,70,0,1
+2024-09-05,1490,28.3,73,0,1
+2024-09-06,1150,26.5,78,12.5,0
+2024-09-07,1100,25.8,80,8.3,0
+2024-09-08,1460,28.1,71,0,1
+2024-09-09,1530,29.5,67,0,1
+2024-09-10,1470,28.4,74,3.1,1`;
+            document.getElementById('modelTrainingDataInput').value = sampleData;
+        }
+
+        function setupModelTrainingUpload() {
+            const dropZone = document.getElementById('modelCsvDropZone');
+            const fileInput = document.getElementById('modelCsvFileInput');
+            if (!dropZone || !fileInput) return;
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
+                dropZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); });
+            });
+
+            dropZone.addEventListener('dragenter', () => dropZone.classList.add('drag-over'));
+            dropZone.addEventListener('dragover', () => dropZone.classList.add('drag-over'));
+            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+            dropZone.addEventListener('drop', e => {
+                dropZone.classList.remove('drag-over');
+                const file = e.dataTransfer.files[0];
+                if (file) handleModelCsvFile(file);
+            });
+            dropZone.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', e => {
+                if (e.target.files[0]) handleModelCsvFile(e.target.files[0]);
+            });
+        }
+
+        function handleModelCsvFile(file) {
+            if (!file.name.endsWith('.csv')) {
+                alert('Please upload a .csv file');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = e => {
+                document.getElementById('modelTrainingDataInput').value = e.target.result;
+                document.getElementById('modelFileName').textContent = file.name;
+                document.getElementById('modelFileInfo').style.display = 'flex';
+            };
+            reader.readAsText(file);
+        }
+
+        function updateEvaluationMetrics(metrics) {
+            const rmse = Number(metrics?.RMSE || 0);
+            const mae = Number(metrics?.MAE || 0);
+            const r2 = Number(metrics?.R2 || 0);
+
+            document.getElementById('evalRmseValue').textContent = `${rmse.toFixed(2)}`;
+            document.getElementById('evalMaeValue').textContent = `${mae.toFixed(2)}`;
+            document.getElementById('evalR2Value').textContent = `${r2.toFixed(2)}`;
+
+            document.getElementById('techRmse').textContent = `${rmse.toFixed(2)} kWh`;
+            document.getElementById('techMae').textContent = `${mae.toFixed(2)} kWh`;
+            document.getElementById('techMape').textContent = `${Number(metrics?.MAPE || 0).toFixed(2)}%`;
+            document.getElementById('techR2').textContent = r2.toFixed(2);
+
+            const rmseBar = document.getElementById('evalRmseBar');
+            const maeBar = document.getElementById('evalMaeBar');
+            const r2Bar = document.getElementById('evalR2Bar');
             
-            html.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
+            const rmsePercent = Math.max(5, Math.min(95, 100 - (rmse / 100 * 100)));
+            const maePercent = Math.max(5, Math.min(95, 100 - (mae / 100 * 100)));
+            const r2Percent = Math.max(5, Math.min(98, r2 * 100));
             
-            const sunIcon = document.getElementById('sunIcon');
-            const moonIcon = document.getElementById('moonIcon');
+            if (rmseBar) rmseBar.style.width = `${rmsePercent}%`;
+            if (maeBar) maeBar.style.width = `${maePercent}%`;
+            if (r2Bar) r2Bar.style.width = `${r2Percent}%`;
             
-            if (newTheme === 'dark') {
-                sunIcon.style.display = 'none';
-                moonIcon.style.display = 'block';
-            } else {
-                sunIcon.style.display = 'block';
-                moonIcon.style.display = 'none';
+            // Update model catalog with baseline comparison
+            updateModelCatalog(metrics);
+        }
+
+        function calculateBaselineMetrics(historicalData) {
+            if (!historicalData || !historicalData.consumption || historicalData.consumption.length < 2) {
+                return null;
+            }
+
+            const consumption = historicalData.consumption;
+            const n = consumption.length;
+
+            // Persistence (Naive)
+            let persistenceSSE = 0;
+            for (let i = 1; i < n; i++) {
+                const error = consumption[i] - consumption[i - 1];
+                persistenceSSE += error * error;
+            }
+            const persistenceRMSE = Math.sqrt(persistenceSSE / (n - 1));
+            
+            let persistenceMAE = 0;
+            for (let i = 1; i < n; i++) {
+                persistenceMAE += Math.abs(consumption[i] - consumption[i - 1]);
+            }
+            persistenceMAE /= (n - 1);
+
+            // Historical Mean
+            const mean = consumption.reduce((a, b) => a + b) / n;
+            let meanSSE = 0, totalSS = 0, meanMAE = 0;
+            for (let i = 0; i < n; i++) {
+                const error = consumption[i] - mean;
+                meanSSE += error * error;
+                totalSS += error * error;
+                meanMAE += Math.abs(error);
+            }
+            const meanRMSE = Math.sqrt(meanSSE / n);
+            meanMAE /= n;
+            
+            // Linear Regression
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+            for (let i = 0; i < n; i++) {
+                sumX += i;
+                sumY += consumption[i];
+                sumXY += i * consumption[i];
+                sumX2 += i * i;
+            }
+            const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+            
+            let linearSSE = 0, linearMAE = 0;
+            for (let i = 0; i < n; i++) {
+                const pred = intercept + slope * i;
+                const error = consumption[i] - pred;
+                linearSSE += error * error;
+                linearMAE += Math.abs(error);
+            }
+            const linearRMSE = Math.sqrt(linearSSE / n);
+            linearMAE /= n;
+            const linearR2 = 1 - (linearSSE / totalSS);
+
+            const persistenceR2 = 1 - (persistenceSSE / totalSS);
+            const meanR2 = 0;
+
+            return {
+                persistence: { RMSE: persistenceRMSE, MAE: persistenceMAE, R2: persistenceR2 },
+                mean: { RMSE: meanRMSE, MAE: meanMAE, R2: meanR2 },
+                linear: { RMSE: linearRMSE, MAE: linearMAE, R2: linearR2 }
+            };
+        }
+
+        function updateModelCatalog(currentMetrics) {
+            try {
+                const raw = localStorage.getItem('energyai.shared.dailyModel');
+                if (!raw) return;
+
+                const payload = JSON.parse(raw);
+                if (!payload || !payload.historicalData) return;
+
+                const baselines = calculateBaselineMetrics(payload.historicalData);
+                if (!baselines) return;
+
+                const currentRMSE = Number(currentMetrics?.RMSE || 0);
+                const currentMAE = Number(currentMetrics?.MAE || 0);
+                const currentR2 = Number(currentMetrics?.R2 || 0);
+
+                // Find best baseline RMSE for comparison
+                const bestBaselineRMSE = Math.min(
+                    baselines.linear.RMSE,
+                    baselines.persistence.RMSE,
+                    baselines.mean.RMSE
+                );
+
+                // Build table rows with consistent improvement calculation
+                // All improvements calculated relative to current model to prevent extreme values
+                const models = [
+                    {
+                        name: 'Daily Predictor (Current)',
+                        type: 'ML Model',
+                        rmse: currentRMSE,
+                        mae: currentMAE,
+                        r2: currentR2,
+                        // Improvement vs best baseline, using current as denominator
+                        improvement: ((bestBaselineRMSE - currentRMSE) / currentRMSE * 100),
+                        status: 'Active',
+                        isCurrent: true
+                    },
+                    {
+                        name: 'Linear Regression',
+                        type: 'Baseline',
+                        rmse: baselines.linear.RMSE,
+                        mae: baselines.linear.MAE,
+                        r2: baselines.linear.R2,
+                        // Show how much worse baseline is: negative if worse than current
+                        improvement: -((baselines.linear.RMSE - currentRMSE) / currentRMSE * 100),
+                        status: 'Reference'
+                    },
+                    {
+                        name: 'Persistence (Naive)',
+                        type: 'Baseline',
+                        rmse: baselines.persistence.RMSE,
+                        mae: baselines.persistence.MAE,
+                        r2: baselines.persistence.R2,
+                        // Show how much worse baseline is: negative if worse than current
+                        improvement: -((baselines.persistence.RMSE - currentRMSE) / currentRMSE * 100),
+                        status: 'Reference'
+                    },
+                    {
+                        name: 'Historical Mean',
+                        type: 'Baseline',
+                        rmse: baselines.mean.RMSE,
+                        mae: baselines.mean.MAE,
+                        r2: baselines.mean.R2,
+                        // Show how much worse baseline is: negative if worse than current
+                        improvement: -((baselines.mean.RMSE - currentRMSE) / currentRMSE * 100),
+                        status: 'Reference'
+                    }
+                ];
+
+                // Sort by R² (best first)
+                models.sort((a, b) => b.r2 - a.r2);
+
+                // Update table
+                const tbody = document.getElementById('modelCatalogTableBody');
+                let html = '';
+                
+                models.forEach(model => {
+                    const rowStyle = model.isCurrent 
+                        ? 'border-bottom: 1px solid var(--border-color); background: rgba(16, 185, 129, 0.05);'
+                        : 'border-bottom: 1px solid var(--border-color);';
+                    
+                    const nameStyle = model.isCurrent ? 'font-weight: 600; color: #10b981;' : 'font-weight: 500;';
+                    const statusBadge = model.isCurrent
+                        ? '<span class="badge success">Active</span>'
+                        : '<span class="badge" style="background: var(--gray-100); color: var(--text-secondary);">Reference</span>';
+                    
+                    const improvementText = model.improvement >= 0
+                        ? `+${model.improvement.toFixed(1)}%`
+                        : `${model.improvement.toFixed(1)}%`;
+                    
+                    const improvementColor = model.improvement > 0 ? '#10b981' : '#ef4444';
+                    const improvementStyle = model.isCurrent 
+                        ? `font-weight: 700; color: ${improvementColor};`
+                        : `font-weight: 600; color: ${improvementColor};`;
+                    
+                    html += `
+                        <tr style="${rowStyle}">
+                            <td style="padding: 16px; ${nameStyle}">${model.name}</td>
+                            <td style="padding: 16px;">${model.type}</td>
+                            <td style="padding: 16px;">${model.rmse.toFixed(2)} kWh</td>
+                            <td style="padding: 16px;">${model.mae.toFixed(2)} kWh</td>
+                            <td style="padding: 16px; font-weight: 600;">${model.r2.toFixed(3)}</td>
+                            <td style="padding: 16px; ${improvementStyle}">${improvementText}</td>
+                            <td style="padding: 16px;">${statusBadge}</td>
+                        </tr>
+                    `;
+                });
+                
+                tbody.innerHTML = html;
+
+                // Update badge
+                const badge = document.getElementById('modelCatalogBadge');
+                const bestBaseline = Math.max(baselines.persistence.R2, baselines.linear.R2);
+                const improvement = ((currentR2 - bestBaseline) / (1 - bestBaseline) * 100);
+                
+                if (improvement > 30) {
+                    badge.textContent = `Excellent (+${improvement.toFixed(0)}%)`;
+                    badge.className = 'badge success';
+                } else if (improvement > 10) {
+                    badge.textContent = `Good (+${improvement.toFixed(0)}%)`;
+                    badge.className = 'badge';
+                    badge.style.background = '#fbbf24';
+                    badge.style.color = '#fff';
+                } else {
+                    badge.textContent = `Modest (+${improvement.toFixed(0)}%)`;
+                    badge.className = 'badge';
+                    badge.style.background = '#94a3b8';
+                    badge.style.color = '#fff';
+                }
+
+                // Update insight
+                const insightDiv = document.getElementById('catalogInsight');
+                const insightText = document.getElementById('catalogInsightText');
+                
+                insightDiv.style.display = 'block';
+                insightDiv.style.borderLeftColor = improvement > 20 ? '#10b981' : (improvement > 10 ? '#fbbf24' : '#94a3b8');
+                
+                if (improvement > 30) {
+                    insightText.innerHTML = `<strong style="color: #10b981;">Excellent Performance:</strong> Current model achieves ${improvement.toFixed(1)}% improvement over best baseline (R² ${bestBaseline.toFixed(3)}). Model complexity is well-justified by significant performance gains.`;
+                } else if (improvement > 10) {
+                    insightText.innerHTML = `<strong style="color: #fbbf24;">Good Performance:</strong> Current model shows ${improvement.toFixed(1)}% improvement over best baseline. Moderate gains justify model complexity for this application.`;
+                } else if (improvement > 0) {
+                    insightText.innerHTML = `<strong style="color: #f59e0b;">Modest Performance:</strong> Current model improves by ${improvement.toFixed(1)}% over best baseline. Consider if gains justify added complexity, or if simpler approach sufficient.`;
+                } else {
+                    insightText.innerHTML = `<strong style="color: #ef4444;">Performance Warning:</strong> Current model performs similar to or worse than baselines. Review model architecture, hyperparameters, or consider simpler approaches.`;
+                }
+
+            } catch (error) {
+                console.warn('Error updating model catalog:', error);
             }
         }
 
-        // Load saved theme
-        window.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', savedTheme);
-            
-            const sunIcon = document.getElementById('sunIcon');
-            const moonIcon = document.getElementById('moonIcon');
-            
-            if (savedTheme === 'dark') {
-                sunIcon.style.display = 'none';
-                moonIcon.style.display = 'block';
+        function restoreEvaluationMetricsFromStorage() {
+            try {
+                const raw = localStorage.getItem('energyai.shared.dailyModel');
+                if (!raw) return;
+
+                const payload = JSON.parse(raw);
+                if (payload && payload.trainingMetrics) {
+                    updateEvaluationMetrics(payload.trainingMetrics);
+                }
+            } catch (error) {
+                console.warn('Unable to restore evaluation metrics:', error);
+            }
+        }
+
+        function trainTechnicalModel() {
+            const input = document.getElementById('modelTrainingDataInput').value;
+            if (!input.trim()) {
+                alert('Please provide training data');
+                return;
+            }
+
+            const btn = document.getElementById('modelTrainBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Training...';
+            }
+
+            try {
+                const predictor = new DailyPredictor();
+                const data = predictor.parseDailyData(input);
+                if (data.consumption.length < 7) {
+                    throw new Error('Need at least 7 days of training data');
+                }
+
+                const stats = predictor.train(data);
+                saveSharedDailyModel(predictor);
+                updateEvaluationMetrics(stats.metrics);
+            } catch (error) {
+                alert(`Training failed: ${error.message}`);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = 'Train Model';
+                }
+            }
+        }
+
+        window.addEventListener('load', () => {
+            setupModelTrainingUpload();
+            generateModelSampleData();
+            restoreEvaluationMetricsFromStorage();
+        });
+
+        window.addEventListener('energyai:model-updated', restoreEvaluationMetricsFromStorage);
+        window.addEventListener('storage', event => {
+            if (event.key === 'energyai.shared.dailyModel') {
+                restoreEvaluationMetricsFromStorage();
             }
         });
     </script>

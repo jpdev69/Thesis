@@ -24,9 +24,8 @@ npx http-server -p 3000
 
 ## Features
 
-- Generate or input energy consumption data
-- Train the hybrid LSTM-SVM model
-- View performance metrics (RMSE, MAE, MAPE, R²)
-- Generate multi-step forecasts
+- Client-facing forecast dashboard with business-friendly summaries
+- Technical operations page for model training and evaluation
+- Forecast generation for planning and reporting
 - Interactive visualization with Chart.js
 - Real-time status logging

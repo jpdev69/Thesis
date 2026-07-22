@@ -75,6 +75,29 @@ body {
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+body.no-sidebar {
+    display: block;
+}
+
+body.no-sidebar .main-content {
+    margin-left: 0;
+    max-width: none;
+    width: 100%;
+    padding: 32px 40px 48px;
+}
+
+body.no-sidebar .header {
+    margin-bottom: 28px;
+}
+
+body.no-sidebar .content-grid {
+    gap: 24px;
+}
+
+body.no-sidebar .card-body {
+    padding: 24px 28px 28px;
+}
+
 /* Sidebar */
 .sidebar {
     width: 260px;

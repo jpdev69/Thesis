@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analytics - EnergyAI</title>
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <title>Client Insights - EnergyAI</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -56,14 +58,6 @@
                 </svg>
                 <span>Analytics</span>
             </a>
-            <a href="models.html" class="nav-item">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-                    <line x1="12" y1="22.08" x2="12" y2="12"/>
-                </svg>
-                <span>Models</span>
-            </a>
             <a href="reports.html" class="nav-item">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -74,32 +68,16 @@
                 </svg>
                 <span>Reports</span>
             </a>
-            <a href="settings.html" class="nav-item">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                </svg>
-                <span>Settings</span>
-            </a>
-        </nav>
 
-        <div class="sidebar-footer">
-            <div class="user-profile">
-                <div class="avatar">AD</div>
-                <div class="user-info">
-                    <div class="user-name">Admin User</div>
-                    <div class="user-role">Administrator</div>
-                </div>
-            </div>
-        </div>
+        </nav>
     </aside>
 
     <!-- Main Content -->
     <main class="main-content">
         <header class="header">
             <div class="header-left">
-                <h1>Analytics</h1>
-                <p class="subtitle">Detailed energy consumption insights and trends</p>
+                <h1>Client Insights</h1>
+                <p class="subtitle">Business-friendly energy trends and planning insights for stakeholders</p>
             </div>
             <div class="header-right">
                 <button class="btn-icon" id="themeToggle" onclick="toggleTheme()">
@@ -118,14 +96,22 @@
                         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
                     </svg>
                 </button>
-                <select class="btn-secondary" style="padding: 10px 16px;">
-                    <option>Last 7 Days</option>
-                    <option>Last 30 Days</option>
-                    <option>Last 90 Days</option>
-                    <option>Last Year</option>
+                <select class="btn-secondary" style="padding: 10px 16px;" id="periodSelect">
+                    <option value="Last 7 Days">Last 7 Days</option>
+                    <option value="Last 30 Days">Last 30 Days</option>
+                    <option value="Last 90 Days">Last 90 Days</option>
+                    <option value="Last Year">Last Year</option>
                 </select>
             </div>
         </header>
+
+        <div class="card" style="margin-bottom: 20px;">
+            <div class="card-body" style="padding: 18px 20px;">
+                <p style="margin: 0; color: var(--text-secondary); line-height: 1.6;">
+                    Review recent energy use, compare facilities, and explore planning insights in a clearer, business-friendly view.
+                </p>
+            </div>
+        </div>
 
         <!-- Time Period Stats -->
         <div class="stats-grid">
@@ -137,7 +123,7 @@
                     </svg>
                 </div>
                 <div class="stat-content">
-                    <div class="stat-label">Total Consumption</div>
+                    <div class="stat-label">Estimated Consumption</div>
                     <div class="stat-value">24,567 kWh</div>
                     <div class="stat-change positive">-8.2% vs last period</div>
                 </div>
@@ -150,7 +136,7 @@
                     </svg>
                 </div>
                 <div class="stat-content">
-                    <div class="stat-label">Cost Savings</div>
+                    <div class="stat-label">Projected Savings</div>
                     <div class="stat-value">₱159,686</div>
                     <div class="stat-change positive">+12.4% improvement</div>
                 </div>
@@ -164,7 +150,7 @@
                     </svg>
                 </div>
                 <div class="stat-content">
-                    <div class="stat-label">Peak Demand</div>
+                    <div class="stat-label">Peak Demand Outlook</div>
                     <div class="stat-value">187.3 kW</div>
                     <div class="stat-change">At 2:00 PM</div>
                 </div>
@@ -178,7 +164,7 @@
                     </svg>
                 </div>
                 <div class="stat-content">
-                    <div class="stat-label">Buildings Monitored</div>
+                    <div class="stat-label">Facilities Covered</div>
                     <div class="stat-value">12</div>
                     <div class="stat-change">All active</div>
                 </div>
@@ -189,7 +175,7 @@
         <div class="content-grid">
             <div class="card chart-card">
                 <div class="card-header">
-                    <h3>Consumption Trends</h3>
+                    <h3>Usage Trends</h3>
                     <div class="chart-controls">
                         <button class="btn-text active">Daily</button>
                         <button class="btn-text">Weekly</button>
@@ -203,7 +189,7 @@
 
             <div class="card">
                 <div class="card-header">
-                    <h3>Building Comparison</h3>
+                    <h3>Facility Comparison</h3>
                 </div>
                 <div class="card-body">
                     <canvas id="buildingChart"></canvas>
@@ -212,7 +198,7 @@
 
             <div class="card">
                 <div class="card-header">
-                    <h3>Peak Hours Analysis</h3>
+                    <h3>Peak Period Outlook</h3>
                 </div>
                 <div class="card-body">
                     <canvas id="peakChart"></canvas>
@@ -221,7 +207,7 @@
 
             <div class="card">
                 <div class="card-header">
-                    <h3>Efficiency Score</h3>
+                    <h3>Efficiency Summary</h3>
                 </div>
                 <div class="card-body">
                     <canvas id="efficiencyChart"></canvas>
@@ -230,7 +216,7 @@
         </div>
     </main>
 
-    <script src="auth.js"></script>
-    <script src="analytics.js"></script>
+    <script src="auth.js?v=20260705"></script>
+    <script src="analytics.js?v=20260705b"></script>
 </body>
 </html>
