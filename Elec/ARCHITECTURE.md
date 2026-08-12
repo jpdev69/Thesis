@@ -50,8 +50,8 @@ The Daily Energy Forecasting System uses a hybrid AI/ML approach combining Enhan
 │                           │                                      │
 │                           ▼                                      │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │           Weighted Ensemble                              │  │
-│  │  Final = 0.7 × LSTM + 0.3 × SVM                          │  │
+│  │           100% Integrated Hybrid Architecture            │  │
+│  │  SVM predicts on stacked features (LSTM + Statistical)   │  │
 │  └──────────────────────────────────────────────────────────┘  │
 └────────────────────────┬────────────────────────────────────────┘
                          │
@@ -138,10 +138,11 @@ SVM:
 Output: Residual correction
 ```
 
-### Ensemble
+### 100% Integrated Hybrid Architecture
 
 ```python
-final_prediction = 0.7 × lstm_prediction + 0.3 × svm_prediction
+# Feature Stacking: SVM learns directly on top of LSTM temporal representations
+final_prediction = svm_model.predict(stacked_features=[raw_features, lstm_temporal_predictions])
 ```
 
 ---
