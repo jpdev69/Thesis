@@ -143,8 +143,10 @@ def load_historical_data():
     """Generate sample historical data"""
     print("⚠️  Using example data. Replace with your actual daily records!\n")
     
-    # Generate 90 days of example data
-    dates = pd.date_range(start='2024-09-01', periods=90, freq='D')
+    # Generate 90 days of example data up to today
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=89)
+    dates = pd.date_range(start=start_date, periods=90, freq='D')
     
     data = {
         'Date': dates,

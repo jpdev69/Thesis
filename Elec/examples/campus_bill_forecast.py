@@ -91,8 +91,7 @@ def main():
     
     model = HybridLSTMSVM(
         sequence_length=12,
-        features=1,
-        lstm_weight=0.7  # 70% LSTM, 30% SVM
+        features=1
     )
     
     model.train(X_train, y_train, epochs=50)
