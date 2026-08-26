@@ -1,31 +1,31 @@
-# Frontend Dashboard
+# Frontend (Thesis-Critical)
 
-Interactive web dashboard for the Campus Energy Forecasting System.
-
-## Setup
-
-No build step required - pure HTML/CSS/JavaScript.
+This frontend provides the thesis demonstration interface for forecasting outputs and model evaluation.
 
 ## Run
 
-1. Start the backend API first (see backend/README.md)
-
-2. Open `index.html` in a web browser, or serve with a local server:
+Use any static server from the `Elec` directory, for example:
 
 ```bash
-# Python
-python -m http.server 3000
-
-# Node.js
-npx http-server -p 3000
+python -m http.server 8080 --directory frontend
 ```
 
-3. Navigate to `http://localhost:3000`
+Open: `http://localhost:8080`
 
-## Features
+Run backend API on default thesis port:
 
-- Client-facing forecast dashboard with business-friendly summaries
-- Technical operations page for model training and evaluation
-- Forecast generation for planning and reporting
-- Interactive visualization with Chart.js
-- Real-time status logging
+```bash
+python backend/daily_api.py
+```
+
+API default endpoint: `http://localhost:8000`
+
+## Thesis-Relevant Pages
+
+- `models.html` - technical model training metrics and baseline comparison table (includes ARIMA baseline row when backend is running).
+- `dashboard.html` - operational forecast outputs and cost-oriented display.
+
+## Notes
+
+- Keep this layer focused on thesis evidence: metrics, forecast plots, baseline comparisons, and decision-support outputs.
+- Frontend API base URL is configurable in `settings.html` and stored in localStorage key `energyai.apiBase`.

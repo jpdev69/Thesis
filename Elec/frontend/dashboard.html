@@ -150,6 +150,15 @@
                     </svg>
                     Export CSV
                 </button>
+                <button class="btn-secondary" onclick="openApiDocs()" title="Open API documentation">
+                    API Docs
+                </button>
+                <button class="btn-secondary" onclick="openApiHealth()" title="Open API health endpoint">
+                    API Health
+                </button>
+                <button class="btn-secondary" onclick="openBaselineComparison()" title="Open latest hybrid vs ARIMA comparison endpoint">
+                    Baseline JSON
+                </button>
             </div>
         </header>
 
@@ -382,7 +391,30 @@
         </div>
     </main>
 
+    <script src="config.js?v=20260806"></script>
     <script src="auth.js?v=20260805d"></script>
     <script src="dashboard-fixed.js?v=20260805d"></script>
+    <script>
+        function openApiDocs() {
+            const base = (window.EnergyAIConfig && window.EnergyAIConfig.getApiBase)
+                ? window.EnergyAIConfig.getApiBase()
+                : 'http://localhost:8000';
+            window.open(`${base}/docs`, '_blank');
+        }
+
+        function openApiHealth() {
+            const base = (window.EnergyAIConfig && window.EnergyAIConfig.getApiBase)
+                ? window.EnergyAIConfig.getApiBase()
+                : 'http://localhost:8000';
+            window.open(`${base}/health`, '_blank');
+        }
+
+        function openBaselineComparison() {
+            const base = (window.EnergyAIConfig && window.EnergyAIConfig.getApiBase)
+                ? window.EnergyAIConfig.getApiBase()
+                : 'http://localhost:8000';
+            window.open(`${base}/baseline-comparison`, '_blank');
+        }
+    </script>
 </body>
 </html>

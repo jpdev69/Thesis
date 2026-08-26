@@ -4,7 +4,18 @@
 // Updated: July 2026
 // ============================================================
 
-const API_BASE = 'http://localhost:8000';
+function getApiBase() {
+    if (window.EnergyAIConfig && typeof window.EnergyAIConfig.getApiBase === 'function') {
+        return window.EnergyAIConfig.getApiBase();
+    }
+    return 'http://localhost:8000';
+}
+
+function fetchWithTimeout(url, timeoutMs) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
+}
 const SHARED_DAILY_MODEL_KEY = 'energyai.shared.dailyModel';
 const INTERACTION_HISTORY_KEY = 'energyai.interactionHistory';
 
@@ -93,7 +104,7 @@ function updateChartsTheme() {
 
 async function checkApiHealth() {
     try {
-        const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(2000) });
+        const res = await fetchWithTimeout(`${getApiBase()}/health`, 2000);
         if (res.ok) {
             apiAvailable = true;
             return await res.json();
@@ -106,8 +117,10 @@ async function checkApiHealth() {
 async function fetchApiMetrics() {
     if (!apiAvailable) return null;
     try {
-        const res = await fetch(`${API_BASE}/metrics`, { signal: AbortSignal.timeout(3000) });
-        if (res.ok) return await res.json();
+        const res = await fetchWithTimeout(`${getApiBase()}/metrics`, 3000);
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data?.validation_metrics || data;
     } catch (_) {}
     return null;
 }
@@ -127,6 +140,31 @@ function loadSharedForecastState() {
     }
 }
 
+function syncMetricsToLocalStorage(metricsPayload) {
+    if (!metricsPayload || !metricsPayload.training_snapshot || !metricsPayload.validation_metrics) {
+        return null;
+    }
+
+    const s = metricsPayload.training_snapshot;
+    const payload = {
+        trained: true,
+        historicalData: {
+            consumption: Array.isArray(s.consumption) ? s.consumption : [],
+            temperature: Array.isArray(s.temperature) ? s.temperature : [],
+            humidity: Array.isArray(s.humidity) ? s.humidity : [],
+            rainfall: Array.isArray(s.rainfall) ? s.rainfall : [],
+            hasClasses: Array.isArray(s.has_classes) ? s.has_classes : [],
+            dayOfWeek: Array.isArray(s.day_of_week) ? s.day_of_week : [],
+            isWeekend: Array.isArray(s.is_weekend) ? s.is_weekend : [],
+            dates: [],
+        },
+        trainingMetrics: metricsPayload.validation_metrics,
+    };
+
+    localStorage.setItem(SHARED_DAILY_MODEL_KEY, JSON.stringify(payload));
+    return payload;
+}
+
 // ============================================================
 //  DATA RESOLUTION (API → localStorage → defaults)
 // ============================================================
@@ -136,7 +174,13 @@ async function resolveAnalyticsData() {
     const health = await checkApiHealth();
     if (health && health.model_trained) {
         const apiMetrics = await fetchApiMetrics();
-        if (apiMetrics) return { source: 'api', ...apiMetrics };
+        if (apiMetrics) {
+            const synced = syncMetricsToLocalStorage(apiMetrics);
+            if (synced && synced.historicalData && synced.historicalData.consumption.length > 0) {
+                return { source: 'local', payload: synced };
+            }
+            return { source: 'api', ...apiMetrics };
+        }
     }
 
     // 2. Try localStorage model
@@ -277,9 +321,9 @@ function updateAnalyticsFromData(data) {
     const recentActivity = getRecentActivity(currentPeriod);
 
     if (data.source === 'api') {
-        // API returned metrics — adapt as needed
+        // API-only fallback (if snapshot unavailable)
         hasRealData = true;
-        consumption = defaultConsumption(); // API doesn't expose raw history in this version
+        consumption = defaultConsumption();
         labels = defaultDates();
         trainingMetrics = data;
     } else if (data.source === 'local') {

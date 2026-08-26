@@ -344,7 +344,7 @@
             <div class="form-group">
                 <label for="signupName">Full Name</label>
                 <div class="input-wrapper">
-                    <input type="text" id="signupName" class="form-control" placeholder="Danielle Vince Fronda" required>
+                    <input type="text" id="signupName" class="form-control" placeholder="Campus Energy Manager" required>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                         <circle cx="12" cy="7" r="4"/>
@@ -384,7 +384,116 @@
         </form>
     </div>
 
+    <script src="config.js?v=20260806"></script>
     <script>
+        const AUTH_KEYS = {
+            users: 'users',
+            currentUser: 'currentUser',
+            returnTo: 'returnTo',
+        };
+
+        const ADMIN_EMAIL = 'admin@energy.ai';
+
+        function safeReadJson(key, fallback) {
+            try {
+                const raw = localStorage.getItem(key);
+                if (!raw) return fallback;
+                return JSON.parse(raw);
+            } catch (_) {
+                return fallback;
+            }
+        }
+
+        function safeWriteJson(key, value) {
+            localStorage.setItem(key, JSON.stringify(value));
+        }
+
+        function normalizeUser(user) {
+            if (!user || typeof user !== 'object') return null;
+            const email = String(user.email || '').trim().toLowerCase();
+            if (!email) return null;
+
+            const role = String(user.role || (email === ADMIN_EMAIL ? 'admin' : 'user')).trim().toLowerCase();
+            return {
+                id: user.id || `USR-${Math.floor(Math.random() * 89999 + 10000)}`,
+                name: String(user.name || 'User').trim() || 'User',
+                email,
+                password: String(user.password || ''),
+                status: String(user.status || 'pending').trim().toLowerCase(),
+                role,
+                created: user.created || new Date().toISOString(),
+                lastLogin: user.lastLogin || null,
+            };
+        }
+
+        function loadUsers() {
+            const users = safeReadJson(AUTH_KEYS.users, []);
+            if (!Array.isArray(users)) return [];
+            const normalized = users.map(normalizeUser).filter(Boolean);
+            if (normalized.length !== users.length) {
+                safeWriteJson(AUTH_KEYS.users, normalized);
+            }
+            return normalized;
+        }
+
+        function saveUsers(users) {
+            safeWriteJson(AUTH_KEYS.users, users.map(normalizeUser).filter(Boolean));
+        }
+
+        function seedDefaultUsers() {
+            const users = loadUsers();
+            let changed = false;
+
+            let admin = users.find(u => u.email === ADMIN_EMAIL);
+            if (!admin) {
+                users.push(normalizeUser({
+                    id: 'USR-10001',
+                    name: 'Admin User',
+                    email: ADMIN_EMAIL,
+                    password: 'admin123',
+                    status: 'approved',
+                    role: 'admin',
+                    created: new Date().toISOString(),
+                }));
+                changed = true;
+            }
+
+            if (users.length === 1) {
+                users.push(normalizeUser({
+                    id: 'USR-10002',
+                    name: 'Sample Approved User',
+                    email: 'user@example.edu',
+                    password: 'password123',
+                    status: 'approved',
+                    role: 'user',
+                    created: new Date().toISOString(),
+                }));
+                changed = true;
+            }
+
+            if (changed) {
+                saveUsers(users);
+            }
+        }
+
+        function validReturnPage() {
+            const page = localStorage.getItem(AUTH_KEYS.returnTo) || 'dashboard.html';
+            const allowed = new Set(['dashboard.html', 'analytics.html', 'reports.html', 'settings.html', 'models.html']);
+            return allowed.has(page) ? page : 'dashboard.html';
+        }
+
+        function updateSubmitState(formId, buttonId, isLoading, loadingText, idleText) {
+            const form = document.getElementById(formId);
+            const btn = document.getElementById(buttonId);
+            if (!form || !btn) return;
+            const controls = form.querySelectorAll('input, button, select, textarea');
+            controls.forEach(el => {
+                if (el !== btn) el.disabled = isLoading;
+            });
+            btn.disabled = isLoading;
+            btn.textContent = isLoading ? loadingText : idleText;
+        }
+
         function showAlert(msg, type = 'error') {
             const banner = document.getElementById('alertBanner');
             banner.textContent = msg;
@@ -431,7 +540,7 @@
             const password = document.getElementById('signupPassword').value;
 
             // Retrieve registered users
-            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const users = loadUsers();
 
             if (users.some(u => u.email.toLowerCase() === email)) {
                 showAlert('An account with this email already exists.', 'error');
@@ -439,16 +548,17 @@
             }
 
             // Add new user in 'pending' status
-            users.push({
+            users.push(normalizeUser({
                 id: 'USR-' + Math.floor(Math.random() * 89999 + 10000),
-                name: name,
-                email: email,
-                password: password,
+                name,
+                email,
+                password,
                 status: 'pending',
-                created: new Date().toISOString()
-            });
+                role: 'user',
+                created: new Date().toISOString(),
+            }));
 
-            localStorage.setItem('users', JSON.stringify(users));
+            saveUsers(users);
 
             showAlert('Account registered successfully! Pending Administrator approval.', 'success');
             document.getElementById('signupForm').reset();
@@ -473,7 +583,7 @@
             const email = document.getElementById('loginEmail').value.trim().toLowerCase();
             const password = document.getElementById('loginPassword').value;
 
-            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const users = loadUsers();
             const user = users.find(u => u.email.toLowerCase() === email && u.password === password);
 
             if (!user) {
@@ -493,41 +603,26 @@
             }
 
             // Successful Login
-            localStorage.setItem('currentUser', JSON.stringify(user));
+            user.lastLogin = new Date().toISOString();
+            saveUsers(users);
+            safeWriteJson(AUTH_KEYS.currentUser, {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                status: user.status,
+                role: user.role,
+            });
             showAlert('Login successful! Redirecting to workspace...', 'success');
 
-            const returnTo = localStorage.getItem('returnTo') || 'dashboard.html';
-            localStorage.removeItem('returnTo');
+            const returnTo = user.role === 'admin' ? 'models.html' : validReturnPage();
+            localStorage.removeItem(AUTH_KEYS.returnTo);
 
             setTimeout(() => {
                 window.location.href = returnTo;
             }, 1000);
         });
 
-        // Initialize default seed users if none exist
-        (function seedDefaultUsers() {
-            const users = JSON.parse(localStorage.getItem('users') || '[]');
-            if (users.length === 0) {
-                localStorage.setItem('users', JSON.stringify([
-                    {
-                        id: 'USR-10001',
-                        name: 'Admin User',
-                        email: 'admin@energy.ai',
-                        password: 'admin123',
-                        status: 'approved',
-                        created: new Date().toISOString()
-                    },
-                    {
-                        id: 'USR-10002',
-                        name: 'Danielle Vince Fronda',
-                        email: 'danielle@campus.edu',
-                        password: 'password123',
-                        status: 'approved',
-                        created: new Date().toISOString()
-                    }
-                ]));
-            }
-        })();
+        seedDefaultUsers();
     </script>
     <script type="module">
         import * as THREE from 'three';

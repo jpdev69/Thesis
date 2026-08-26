@@ -14,6 +14,56 @@ let notificationCount = 0;
 let lastTrainingData = null;
 let lastForecastResult = null;
 
+function getApiBase() {
+    if (window.EnergyAIConfig && typeof window.EnergyAIConfig.getApiBase === 'function') {
+        return window.EnergyAIConfig.getApiBase();
+    }
+    return 'http://localhost:8000';
+}
+
+function fetchWithTimeout(url, timeoutMs) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
+async function hydrateSharedModelFromApi() {
+    try {
+        const healthRes = await fetchWithTimeout(`${getApiBase()}/health`, 2000);
+        if (!healthRes.ok) return null;
+        const health = await healthRes.json();
+        if (!health.model_trained) return null;
+
+        const metricsRes = await fetchWithTimeout(`${getApiBase()}/metrics`, 3000);
+        if (!metricsRes.ok) return null;
+        const metricsPayload = await metricsRes.json();
+
+        const snapshot = metricsPayload?.training_snapshot;
+        const validation = metricsPayload?.validation_metrics;
+        if (!snapshot || !validation) return null;
+
+        const payload = {
+            trained: true,
+            historicalData: {
+                consumption: Array.isArray(snapshot.consumption) ? snapshot.consumption : [],
+                temperature: Array.isArray(snapshot.temperature) ? snapshot.temperature : [],
+                humidity: Array.isArray(snapshot.humidity) ? snapshot.humidity : [],
+                rainfall: Array.isArray(snapshot.rainfall) ? snapshot.rainfall : [],
+                hasClasses: Array.isArray(snapshot.has_classes) ? snapshot.has_classes : [],
+                dayOfWeek: Array.isArray(snapshot.day_of_week) ? snapshot.day_of_week : [],
+                isWeekend: Array.isArray(snapshot.is_weekend) ? snapshot.is_weekend : [],
+                dates: [],
+            },
+            trainingMetrics: validation,
+        };
+
+        localStorage.setItem(SHARED_DAILY_MODEL_KEY, JSON.stringify(payload));
+        return payload;
+    } catch (_) {
+        return null;
+    }
+}
+
 // Interaction tracking for reports page
 const INTERACTION_HISTORY_KEY = 'energyai.interactionHistory';
 
@@ -1285,8 +1335,10 @@ window.addEventListener('load', () => {
     loadSidebarState();
     initChart();
     setupDragDrop();
-    logStatus('Dashboard initialized — EnergyAI v2.0', 'success');
-    logStatus('Enhanced forecasting with confidence intervals, anomaly detection, and peak load analysis', 'success');
+    hydrateSharedModelFromApi().finally(() => {
+        logStatus('Dashboard initialized — EnergyAI v2.0', 'success');
+        logStatus('Enhanced forecasting with confidence intervals, anomaly detection, and peak load analysis', 'success');
+    });
 });
 
 // Load sidebar state from localStorage

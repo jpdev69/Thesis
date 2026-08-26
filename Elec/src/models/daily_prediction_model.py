@@ -114,6 +114,10 @@ class DailyEnergyPredictor:
         self.weekday_means = {}
         self.class_day_mean = None
         self.no_class_day_mean = None
+        self.validation_start_index = None
+        self.validation_length = None
+        self.validation_actual = None
+        self.validation_predictions = None
     
     def _build_lstm_model(self, n_features):
         """Build Enhanced LSTM with Multi-Head Attention or Fallback."""
@@ -390,6 +394,8 @@ class DailyEnergyPredictor:
         split_idx = int(len(X) * (1 - validation_split))
         X_train, X_val = X[:split_idx], X[split_idx:]
         y_train, y_val = y[:split_idx], y[split_idx:]
+        self.validation_start_index = split_idx + self.sequence_length
+        self.validation_length = len(y_val)
         
         # Build and train LSTM
         print("\nTraining LSTM component...")
@@ -445,6 +451,9 @@ class DailyEnergyPredictor:
         ss_res = np.sum((y_val_actual - val_predictions) ** 2)
         ss_tot = np.sum((y_val_actual - np.mean(y_val_actual)) ** 2)
         r2 = 1 - (ss_res / ss_tot) if ss_tot > 0 else 0
+
+        self.validation_actual = y_val_actual
+        self.validation_predictions = val_predictions
         
         # Directional accuracy
         if len(y_val_actual) > 1:
@@ -654,6 +663,8 @@ class DailyEnergyPredictor:
             'weekday_means': self.weekday_means,
             'class_day_mean': self.class_day_mean,
             'no_class_day_mean': self.no_class_day_mean,
+            'validation_start_index': self.validation_start_index,
+            'validation_length': self.validation_length,
             'is_trained': self.is_trained
         }, os.path.join(directory, 'daily_meta.joblib'))
     
@@ -672,4 +683,6 @@ class DailyEnergyPredictor:
         self.weekday_means = meta['weekday_means']
         self.class_day_mean = meta['class_day_mean']
         self.no_class_day_mean = meta['no_class_day_mean']
+        self.validation_start_index = meta.get('validation_start_index')
+        self.validation_length = meta.get('validation_length')
         self.is_trained = meta['is_trained']

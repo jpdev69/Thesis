@@ -1,38 +1,35 @@
-# Backend API
+# Backend (Thesis-Critical)
 
-FastAPI backend for the Campus Energy Forecasting System.
+FastAPI backend for hybrid forecasting and ARIMA baseline benchmarking.
 
-## Setup
+## Main Service
 
-```bash
-cd backend
-pip install -r requirements.txt
-```
+- Entry file: `daily_api.py`
+- Start command:
+  - `python daily_api.py`
 
-## Run
+## Thesis Endpoints
 
-```bash
-python app.py
-```
+- `POST /train-daily`
+  - Trains the hybrid model from consumption + weather + schedule arrays.
+  - Requires at least 30 aligned daily records.
+  - Also computes and stores hybrid-vs-ARIMA comparison on validation horizon.
 
-Or with uvicorn:
+- `POST /forecast-daily`
+  - Runs recursive multi-day forecasting (default 7 days).
+  - Returns predictions, confidence bounds, anomaly flags, and cost analytics.
 
-```bash
-uvicorn app:app --reload --host 0.0.0.0 --port 8000
-```
+- `POST /benchmark-arima`
+  - Runs ARIMA holdout benchmark from consumption-only series.
 
-## API Endpoints
+- `GET /baseline-comparison`
+  - Returns latest hybrid-vs-ARIMA comparison generated at training time.
 
-- `GET /` - API information
-- `POST /train` - Train model with energy data
-- `POST /predict` - Single-step predictions
-- `POST /forecast` - Multi-step forecast
-- `GET /health` - Health check
+- `GET /model-status`
+- `GET /metrics`
+- `GET /health`
 
-## Example Request
+## Notes
 
-```bash
-curl -X POST "http://localhost:8000/train" \
-  -H "Content-Type: application/json" \
-  -d '{"values": [100, 120, 115, 130, 125], "sequence_length": 24}'
-```
+- This backend now directly supports all thesis objectives, including objective 2 (ARIMA baseline comparison).
+- Runtime evidence is included in API responses (`runtime.uses_tensorflow_lstm`, `runtime.lstm_backend`).

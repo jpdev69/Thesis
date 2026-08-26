@@ -7,6 +7,55 @@ const INTERACTION_HISTORY_KEY = 'energyai.interactionHistory';
 const SCHEDULED_REPORTS_KEY = 'energyai.scheduledReports';
 const SHARED_DAILY_MODEL_KEY = 'energyai.shared.dailyModel';
 
+function getApiBase() {
+    if (window.EnergyAIConfig && typeof window.EnergyAIConfig.getApiBase === 'function') {
+        return window.EnergyAIConfig.getApiBase();
+    }
+    return 'http://localhost:8000';
+}
+
+function fetchWithTimeout(url, timeoutMs) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
+async function hydrateSharedModelFromApi() {
+    try {
+        const healthRes = await fetchWithTimeout(`${getApiBase()}/health`, 2000);
+        if (!healthRes.ok) return;
+        const health = await healthRes.json();
+        if (!health.model_trained) return;
+
+        const metricsRes = await fetchWithTimeout(`${getApiBase()}/metrics`, 3000);
+        if (!metricsRes.ok) return;
+        const metricsPayload = await metricsRes.json();
+
+        const snapshot = metricsPayload?.training_snapshot;
+        const validation = metricsPayload?.validation_metrics;
+        if (!snapshot || !validation) return;
+
+        const payload = {
+            trained: true,
+            historicalData: {
+                consumption: Array.isArray(snapshot.consumption) ? snapshot.consumption : [],
+                temperature: Array.isArray(snapshot.temperature) ? snapshot.temperature : [],
+                humidity: Array.isArray(snapshot.humidity) ? snapshot.humidity : [],
+                rainfall: Array.isArray(snapshot.rainfall) ? snapshot.rainfall : [],
+                hasClasses: Array.isArray(snapshot.has_classes) ? snapshot.has_classes : [],
+                dayOfWeek: Array.isArray(snapshot.day_of_week) ? snapshot.day_of_week : [],
+                isWeekend: Array.isArray(snapshot.is_weekend) ? snapshot.is_weekend : [],
+                dates: [],
+            },
+            trainingMetrics: validation,
+        };
+
+        localStorage.setItem(SHARED_DAILY_MODEL_KEY, JSON.stringify(payload));
+    } catch (_) {
+        // Keep reports functional with local state fallback
+    }
+}
+
 // ============================================================
 // INTERACTION HISTORY TRACKING
 // ============================================================
@@ -382,20 +431,22 @@ function loadTheme() {
 
 window.addEventListener('DOMContentLoaded', () => {
     loadTheme();
-    renderRecentReports();
-    renderScheduledReports();
-    renderReportTemplates();
-    
-    // Update subtitle with model info
-    const modelData = loadSharedForecastState();
-    const subtitle = document.querySelector('.header-left .subtitle');
-    
-    if (subtitle && modelData && modelData.trained) {
-        const consumption = modelData.historicalData?.consumption || [];
-        const avgConsumption = consumption.length ? consumption.reduce((a, b) => a + b, 0) / consumption.length : 0;
-        const dataPoints = consumption.length;
-        subtitle.textContent = `${dataPoints} data points tracked • ${Math.round(avgConsumption).toLocaleString()} kWh average consumption`;
-    }
+    hydrateSharedModelFromApi().finally(() => {
+        renderRecentReports();
+        renderScheduledReports();
+        renderReportTemplates();
+
+        // Update subtitle with model info
+        const modelData = loadSharedForecastState();
+        const subtitle = document.querySelector('.header-left .subtitle');
+
+        if (subtitle && modelData && modelData.trained) {
+            const consumption = modelData.historicalData?.consumption || [];
+            const avgConsumption = consumption.length ? consumption.reduce((a, b) => a + b, 0) / consumption.length : 0;
+            const dataPoints = consumption.length;
+            subtitle.textContent = `${dataPoints} data points tracked • ${Math.round(avgConsumption).toLocaleString()} kWh average consumption`;
+        }
+    });
 });
 
 // Listen for storage changes (when training/forecasting happens on dashboard)
