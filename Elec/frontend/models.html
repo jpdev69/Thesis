@@ -205,6 +205,7 @@
                             <li><strong>Persistence (Naive):</strong> Predicts next value = current value (simplest forecast)</li>
                             <li><strong>Historical Mean:</strong> Always predicts the historical average</li>
                             <li><strong>Linear Regression:</strong> Simple linear trend model</li>
+                            <li><strong>ARIMA:</strong> Classical autoregressive integrated moving average baseline</li>
                             <li><strong>Daily Predictor:</strong> Your trained model with weather & schedule features</li>
                         </ul>
                     </div>
@@ -253,12 +254,99 @@
         </div>
     </main>
 
+    <script src="config.js?v=20260806"></script>
     <script src="auth.js?v=20260805c"></script>
     <script src="dashboard-fixed.js?v=20260704"></script>
     <script>
+        const MODELS_PAGE_METRICS_KEY = 'energyai.models.pageMetrics';
+        const MODELS_PAGE_INPUT_KEY = 'energyai.models.trainingInput';
+
         function generateModelSampleData() {
             const sampleData = generateDynamicSampleCSV(30);
             document.getElementById('modelTrainingDataInput').value = sampleData;
+        }
+
+        let arimaBaselineData = null;
+        let arimaRequestInFlight = false;
+        let latestCurrentMetrics = null;
+
+        function apiUrl(path) {
+            if (window.EnergyAIConfig && typeof window.EnergyAIConfig.apiUrl === 'function') {
+                return window.EnergyAIConfig.apiUrl(path);
+            }
+            const cleaned = path.startsWith('/') ? path : `/${path}`;
+            return `http://localhost:8000${cleaned}`;
+        }
+
+        function getSeriesSignature(values) {
+            if (!Array.isArray(values) || values.length === 0) return '';
+            const first = Number(values[0] || 0).toFixed(4);
+            const last = Number(values[values.length - 1] || 0).toFixed(4);
+            return `${values.length}:${first}:${last}`;
+        }
+
+        function loadCachedArimaBaseline() {
+            try {
+                const raw = localStorage.getItem('energyai.arimaBaseline');
+                if (!raw) return;
+                const parsed = JSON.parse(raw);
+                if (!parsed || !parsed.signature || !parsed.metrics) return;
+                arimaBaselineData = parsed;
+            } catch (error) {
+                console.warn('Unable to load cached ARIMA baseline:', error);
+            }
+        }
+
+        async function fetchArimaBaselineIfNeeded(consumption, signature) {
+            if (!Array.isArray(consumption) || consumption.length < 30) return;
+            if (arimaRequestInFlight) return;
+            if (arimaBaselineData && arimaBaselineData.signature === signature) return;
+
+            arimaRequestInFlight = true;
+            try {
+                const response = await fetch(apiUrl('/benchmark-arima'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        consumption,
+                        train_ratio: 0.8
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const payload = await response.json();
+                const metrics = payload?.benchmark?.metrics;
+                if (!metrics) {
+                    throw new Error('Missing ARIMA metrics in response');
+                }
+
+                arimaBaselineData = {
+                    signature,
+                    metrics: {
+                        RMSE: Number(metrics.RMSE || 0),
+                        MAE: Number(metrics.MAE || 0),
+                        MAPE: Number(metrics.MAPE || 0),
+                        R2: Number(metrics.R2 || 0)
+                    },
+                    order: payload?.benchmark?.order || null,
+                    used_fallback: Boolean(payload?.benchmark?.used_fallback),
+                    fallback_reason: payload?.benchmark?.fallback_reason || null,
+                    timestamp: new Date().toISOString()
+                };
+
+                localStorage.setItem('energyai.arimaBaseline', JSON.stringify(arimaBaselineData));
+
+                if (latestCurrentMetrics) {
+                    updateModelCatalog(latestCurrentMetrics);
+                }
+            } catch (error) {
+                console.warn('ARIMA benchmark unavailable:', error.message);
+            } finally {
+                arimaRequestInFlight = false;
+            }
         }
 
         function setupModelTrainingUpload() {
@@ -282,6 +370,70 @@
             fileInput.addEventListener('change', e => {
                 if (e.target.files[0]) handleModelCsvFile(e.target.files[0]);
             });
+        }
+
+        function parseTrainingCsv(csvText) {
+            const lines = csvText.trim().split('\n').filter(Boolean);
+            if (lines.length < 2) {
+                throw new Error('CSV must include header and at least one data row');
+            }
+
+            const data = {
+                dates: [],
+                consumption: [],
+                temperature: [],
+                humidity: [],
+                rainfall: [],
+                has_classes: [],
+                day_of_week: [],
+                is_weekend: []
+            };
+
+            for (let i = 1; i < lines.length; i++) {
+                const parts = lines[i].split(',').map(p => p.trim());
+                if (parts.length < 6) continue;
+
+                const dateStr = parts[0];
+                const consumption = Number(parts[1]);
+                const temperature = Number(parts[2]);
+                const humidity = Number(parts[3]);
+                const rainfall = Number(parts[4]);
+                const hasClasses = Number(parts[5]);
+
+                if (
+                    Number.isNaN(consumption) ||
+                    Number.isNaN(temperature) ||
+                    Number.isNaN(humidity) ||
+                    Number.isNaN(rainfall) ||
+                    Number.isNaN(hasClasses)
+                ) {
+                    continue;
+                }
+
+                const dateObj = new Date(`${dateStr}T00:00:00`);
+                if (Number.isNaN(dateObj.getTime())) {
+                    continue;
+                }
+
+                const jsDay = dateObj.getDay();
+                const dayOfWeek = (jsDay + 6) % 7; // Monday=0 ... Sunday=6
+                const isWeekend = dayOfWeek >= 5 ? 1 : 0;
+
+                data.dates.push(dateStr);
+                data.consumption.push(consumption);
+                data.temperature.push(temperature);
+                data.humidity.push(humidity);
+                data.rainfall.push(rainfall);
+                data.has_classes.push(hasClasses);
+                data.day_of_week.push(dayOfWeek);
+                data.is_weekend.push(isWeekend);
+            }
+
+            if (data.consumption.length < 30) {
+                throw new Error('Need at least 30 valid daily rows for thesis training');
+            }
+
+            return data;
         }
 
         function handleModelCsvFile(file) {
@@ -326,6 +478,36 @@
             
             // Update model catalog with baseline comparison
             updateModelCatalog(metrics);
+        }
+
+        function getHistoricalDataForCatalog() {
+            try {
+                const inputRaw = localStorage.getItem(MODELS_PAGE_INPUT_KEY);
+                if (inputRaw) {
+                    const inputParsed = JSON.parse(inputRaw);
+                    if (inputParsed && Array.isArray(inputParsed.consumption) && inputParsed.consumption.length > 1) {
+                        return inputParsed;
+                    }
+                }
+
+                const sharedRaw = localStorage.getItem('energyai.shared.dailyModel');
+                if (sharedRaw) {
+                    const sharedParsed = JSON.parse(sharedRaw);
+                    if (sharedParsed?.historicalData?.consumption?.length > 1) {
+                        return {
+                            consumption: sharedParsed.historicalData.consumption,
+                            temperature: sharedParsed.historicalData.temperature,
+                            humidity: sharedParsed.historicalData.humidity,
+                            rainfall: sharedParsed.historicalData.rainfall,
+                            has_classes: sharedParsed.historicalData.hasClasses,
+                            dates: sharedParsed.historicalData.dates
+                        };
+                    }
+                }
+            } catch (error) {
+                console.warn('Failed to load historical data for catalog:', error);
+            }
+            return null;
         }
 
         function calculateBaselineMetrics(historicalData) {
@@ -396,25 +578,35 @@
 
         function updateModelCatalog(currentMetrics) {
             try {
-                const raw = localStorage.getItem('energyai.shared.dailyModel');
-                if (!raw) return;
+                latestCurrentMetrics = currentMetrics;
+                const historicalData = getHistoricalDataForCatalog();
+                if (!historicalData) return;
 
-                const payload = JSON.parse(raw);
-                if (!payload || !payload.historicalData) return;
-
-                const baselines = calculateBaselineMetrics(payload.historicalData);
+                const baselines = calculateBaselineMetrics(historicalData);
                 if (!baselines) return;
+
+                const signature = getSeriesSignature(historicalData.consumption);
+                fetchArimaBaselineIfNeeded(historicalData.consumption, signature);
 
                 const currentRMSE = Number(currentMetrics?.RMSE || 0);
                 const currentMAE = Number(currentMetrics?.MAE || 0);
                 const currentR2 = Number(currentMetrics?.R2 || 0);
+                const currentRmseDen = Math.max(currentRMSE, 1e-6);
+
+                const arimaMetrics = (
+                    arimaBaselineData &&
+                    arimaBaselineData.signature === signature &&
+                    arimaBaselineData.metrics
+                ) ? arimaBaselineData.metrics : null;
 
                 // Find best baseline RMSE for comparison
-                const bestBaselineRMSE = Math.min(
+                const rmseCandidates = [
                     baselines.linear.RMSE,
                     baselines.persistence.RMSE,
                     baselines.mean.RMSE
-                );
+                ];
+                if (arimaMetrics) rmseCandidates.push(arimaMetrics.RMSE);
+                const bestBaselineRMSE = Math.min(...rmseCandidates);
 
                 // Build table rows with consistent improvement calculation
                 // All improvements calculated relative to current model to prevent extreme values
@@ -426,7 +618,7 @@
                         mae: currentMAE,
                         r2: currentR2,
                         // Improvement vs best baseline, using current as denominator
-                        improvement: ((bestBaselineRMSE - currentRMSE) / currentRMSE * 100),
+                        improvement: ((bestBaselineRMSE - currentRMSE) / currentRmseDen * 100),
                         status: 'Active',
                         isCurrent: true
                     },
@@ -437,7 +629,7 @@
                         mae: baselines.linear.MAE,
                         r2: baselines.linear.R2,
                         // Show how much worse baseline is: negative if worse than current
-                        improvement: -((baselines.linear.RMSE - currentRMSE) / currentRMSE * 100),
+                        improvement: -((baselines.linear.RMSE - currentRMSE) / currentRmseDen * 100),
                         status: 'Reference'
                     },
                     {
@@ -447,7 +639,7 @@
                         mae: baselines.persistence.MAE,
                         r2: baselines.persistence.R2,
                         // Show how much worse baseline is: negative if worse than current
-                        improvement: -((baselines.persistence.RMSE - currentRMSE) / currentRMSE * 100),
+                        improvement: -((baselines.persistence.RMSE - currentRMSE) / currentRmseDen * 100),
                         status: 'Reference'
                     },
                     {
@@ -457,10 +649,22 @@
                         mae: baselines.mean.MAE,
                         r2: baselines.mean.R2,
                         // Show how much worse baseline is: negative if worse than current
-                        improvement: -((baselines.mean.RMSE - currentRMSE) / currentRMSE * 100),
+                        improvement: -((baselines.mean.RMSE - currentRMSE) / currentRmseDen * 100),
                         status: 'Reference'
                     }
                 ];
+
+                if (arimaMetrics) {
+                    models.push({
+                        name: 'ARIMA',
+                        type: 'Baseline',
+                        rmse: Number(arimaMetrics.RMSE || 0),
+                        mae: Number(arimaMetrics.MAE || 0),
+                        r2: Number(arimaMetrics.R2 || 0),
+                        improvement: -((Number(arimaMetrics.RMSE || 0) - currentRMSE) / currentRmseDen * 100),
+                        status: arimaBaselineData?.used_fallback ? 'Fallback' : 'Reference'
+                    });
+                }
 
                 // Sort by R² (best first)
                 models.sort((a, b) => b.r2 - a.r2);
@@ -505,8 +709,15 @@
 
                 // Update badge
                 const badge = document.getElementById('modelCatalogBadge');
-                const bestBaseline = Math.max(baselines.persistence.R2, baselines.linear.R2);
-                const improvement = ((currentR2 - bestBaseline) / (1 - bestBaseline) * 100);
+                const r2Candidates = [
+                    baselines.persistence.R2,
+                    baselines.linear.R2,
+                    baselines.mean.R2
+                ];
+                if (arimaMetrics) r2Candidates.push(Number(arimaMetrics.R2 || 0));
+                const bestBaseline = Math.max(...r2Candidates);
+                const denom = Math.max(1e-6, 1 - bestBaseline);
+                const improvement = ((currentR2 - bestBaseline) / denom * 100);
                 
                 if (improvement > 30) {
                     badge.textContent = `Excellent (+${improvement.toFixed(0)}%)`;
@@ -540,6 +751,10 @@
                     insightText.innerHTML = `<strong style="color: #ef4444;">Performance Warning:</strong> Current model performs similar to or worse than baselines. Review model architecture, hyperparameters, or consider simpler approaches.`;
                 }
 
+                if (!arimaMetrics) {
+                    insightText.innerHTML += ` ARIMA row will appear automatically when backend API is running.`;
+                }
+
             } catch (error) {
                 console.warn('Error updating model catalog:', error);
             }
@@ -547,19 +762,27 @@
 
         function restoreEvaluationMetricsFromStorage() {
             try {
-                const raw = localStorage.getItem('energyai.shared.dailyModel');
-                if (!raw) return;
+                const raw = localStorage.getItem(MODELS_PAGE_METRICS_KEY);
+                if (raw) {
+                    const metrics = JSON.parse(raw);
+                    if (metrics && typeof metrics === 'object') {
+                        updateEvaluationMetrics(metrics);
+                        return;
+                    }
+                }
 
-                const payload = JSON.parse(raw);
-                if (payload && payload.trainingMetrics) {
-                    updateEvaluationMetrics(payload.trainingMetrics);
+                const sharedRaw = localStorage.getItem('energyai.shared.dailyModel');
+                if (!sharedRaw) return;
+                const sharedPayload = JSON.parse(sharedRaw);
+                if (sharedPayload?.trainingMetrics) {
+                    updateEvaluationMetrics(sharedPayload.trainingMetrics);
                 }
             } catch (error) {
                 console.warn('Unable to restore evaluation metrics:', error);
             }
         }
 
-        function trainTechnicalModel() {
+        async function trainTechnicalModel() {
             const input = document.getElementById('modelTrainingDataInput').value;
             if (!input.trim()) {
                 alert('Please provide training data');
@@ -573,15 +796,57 @@
             }
 
             try {
-                const predictor = new DailyPredictor();
-                const data = predictor.parseDailyData(input);
-                if (data.consumption.length < 7) {
-                    throw new Error('Need at least 7 days of training data');
+                const parsed = parseTrainingCsv(input);
+                localStorage.setItem(MODELS_PAGE_INPUT_KEY, JSON.stringify(parsed));
+
+                const response = await fetch(apiUrl('/train-daily'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        consumption: parsed.consumption,
+                        temperature: parsed.temperature,
+                        humidity: parsed.humidity,
+                        rainfall: parsed.rainfall,
+                        has_classes: parsed.has_classes,
+                        day_of_week: parsed.day_of_week,
+                        is_weekend: parsed.is_weekend,
+                        epochs: 100
+                    })
+                });
+
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    const detail = result?.detail || `HTTP ${response.status}`;
+                    throw new Error(detail);
                 }
 
-                const stats = predictor.train(data);
-                saveSharedDailyModel(predictor);
-                updateEvaluationMetrics(stats.metrics);
+                const metrics = result?.validation_metrics;
+                if (!metrics) {
+                    throw new Error('Backend response is missing validation metrics');
+                }
+
+                localStorage.setItem(MODELS_PAGE_METRICS_KEY, JSON.stringify(metrics));
+
+                const signature = getSeriesSignature(parsed.consumption);
+                const arima = result?.baseline_comparison?.metrics?.arima;
+                if (arima) {
+                    arimaBaselineData = {
+                        signature,
+                        metrics: {
+                            RMSE: Number(arima.RMSE || 0),
+                            MAE: Number(arima.MAE || 0),
+                            MAPE: Number(arima.MAPE || 0),
+                            R2: Number(arima.R2 || 0)
+                        },
+                        order: result?.baseline_comparison?.arima_details?.order || null,
+                        used_fallback: Boolean(result?.baseline_comparison?.arima_details?.used_fallback),
+                        fallback_reason: result?.baseline_comparison?.arima_details?.fallback_reason || null,
+                        timestamp: new Date().toISOString()
+                    };
+                    localStorage.setItem('energyai.arimaBaseline', JSON.stringify(arimaBaselineData));
+                }
+
+                updateEvaluationMetrics(metrics);
             } catch (error) {
                 alert(`Training failed: ${error.message}`);
             } finally {
@@ -593,6 +858,11 @@
         }
 
         window.addEventListener('load', () => {
+            if (!window.EnergyAIAuth || !window.EnergyAIAuth.isAdmin) {
+                window.location.href = 'dashboard.html';
+                return;
+            }
+            loadCachedArimaBaseline();
             setupModelTrainingUpload();
             generateModelSampleData();
             restoreEvaluationMetricsFromStorage();
@@ -600,7 +870,12 @@
 
         window.addEventListener('energyai:model-updated', restoreEvaluationMetricsFromStorage);
         window.addEventListener('storage', event => {
-            if (event.key === 'energyai.shared.dailyModel') {
+            if (
+                event.key === 'energyai.shared.dailyModel' ||
+                event.key === MODELS_PAGE_METRICS_KEY ||
+                event.key === MODELS_PAGE_INPUT_KEY ||
+                event.key === 'energyai.arimaBaseline'
+            ) {
                 restoreEvaluationMetricsFromStorage();
             }
         });

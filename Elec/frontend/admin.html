@@ -553,7 +553,7 @@
                     placeholder="Enter admin password (default: admin123)" required autocomplete="current-password" />
             </div>
 
-            <button type="submit" class="btn-submit" onclick="processAdminLogin(event)">Authenticate as Admin</button>
+            <button type="submit" class="btn-submit">Authenticate as Admin</button>
         </form>
 
         <p style="text-align: center; margin-top: 20px; font-size: 13px;">
@@ -657,11 +657,80 @@
 
     <script>
         const ADMIN_PASS = 'admin123';
+        const ADMIN_EMAIL = 'admin@energy.ai';
         let currentFilter = 'all';
+
+        function safeReadJson(key, fallback) {
+            try {
+                const raw = localStorage.getItem(key);
+                if (!raw) return fallback;
+                return JSON.parse(raw);
+            } catch (_) {
+                return fallback;
+            }
+        }
+
+        function safeWriteJson(key, value) {
+            localStorage.setItem(key, JSON.stringify(value));
+        }
+
+        function normalizeUser(user) {
+            if (!user || typeof user !== 'object') return null;
+            const email = String(user.email || '').trim().toLowerCase();
+            if (!email) return null;
+            return {
+                id: user.id || `USR-${Math.floor(Math.random() * 89999 + 10000)}`,
+                name: String(user.name || 'User').trim() || 'User',
+                email,
+                password: String(user.password || ''),
+                status: String(user.status || 'pending').toLowerCase(),
+                role: String(user.role || (email === ADMIN_EMAIL ? 'admin' : 'user')).toLowerCase(),
+                created: user.created || new Date().toISOString(),
+                lastLogin: user.lastLogin || null,
+            };
+        }
+
+        function loadUsers() {
+            const users = safeReadJson('users', []);
+            if (!Array.isArray(users)) return [];
+            const normalized = users.map(normalizeUser).filter(Boolean);
+            if (normalized.length !== users.length) {
+                safeWriteJson('users', normalized);
+            }
+            return normalized;
+        }
+
+        function saveUsers(users) {
+            safeWriteJson('users', users.map(normalizeUser).filter(Boolean));
+        }
 
         function checkAdminSession() {
             const isAdmin = localStorage.getItem('energyai_admin_active') === 'true';
             if (isAdmin) {
+                const users = loadUsers();
+                let admin = users.find(u => u.email === ADMIN_EMAIL);
+                if (!admin) {
+                    admin = normalizeUser({
+                        id: 'USR-10001',
+                        name: 'Admin User',
+                        email: ADMIN_EMAIL,
+                        password: 'admin123',
+                        status: 'approved',
+                        role: 'admin',
+                        created: new Date().toISOString(),
+                    });
+                    users.push(admin);
+                    saveUsers(users);
+                }
+
+                localStorage.setItem('currentUser', JSON.stringify({
+                    id: admin.id,
+                    name: admin.name,
+                    email: admin.email,
+                    status: admin.status,
+                    role: admin.role,
+                }));
+
                 document.body.classList.remove('is-login-mode');
                 document.body.classList.add('is-dashboard-mode');
                 document.getElementById('adminLoginScreen').style.display = 'none';
@@ -689,6 +758,34 @@
             if (pass === 'admin123' || pass === 'admin' || pass === 'admin123!') {
                 if (err) err.style.display = 'none';
                 localStorage.setItem('energyai_admin_active', 'true');
+
+                const users = loadUsers();
+                let admin = users.find(u => u.email === ADMIN_EMAIL);
+                if (!admin) {
+                    admin = normalizeUser({
+                        id: 'USR-10001',
+                        name: 'Admin User',
+                        email: ADMIN_EMAIL,
+                        password: 'admin123',
+                        status: 'approved',
+                        role: 'admin',
+                        created: new Date().toISOString(),
+                    });
+                    users.push(admin);
+                }
+
+                admin.status = 'approved';
+                admin.role = 'admin';
+                admin.lastLogin = new Date().toISOString();
+                saveUsers(users);
+                localStorage.setItem('currentUser', JSON.stringify({
+                    id: admin.id,
+                    name: admin.name,
+                    email: admin.email,
+                    status: admin.status,
+                    role: admin.role,
+                }));
+
                 checkAdminSession();
             } else {
                 if (err) {
@@ -710,6 +807,7 @@
 
         function processAdminLogout() {
             localStorage.removeItem('energyai_admin_active');
+            localStorage.removeItem('currentUser');
             checkAdminSession();
         }
 
@@ -731,7 +829,7 @@
 
         function loadAdminData() {
             try {
-                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                const users = loadUsers();
 
                 const pending = users.filter(u => u && u.status === 'pending');
                 const approved = users.filter(u => u && u.status === 'approved');
@@ -751,7 +849,7 @@
         }
 
         function renderUserList() {
-            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const users = loadUsers();
             const container = document.getElementById('userCardListContainer');
 
             let filtered = users;
@@ -800,7 +898,7 @@
 
             if (user) {
                 user.status = newStatus;
-                localStorage.setItem('users', JSON.stringify(users));
+                saveUsers(users);
                 loadAdminData();
             }
         }
@@ -808,9 +906,9 @@
         function deleteUserAccount(email) {
             if (!confirm(`Are you sure you want to permanently delete user (${email})?`)) return;
 
-            let users = JSON.parse(localStorage.getItem('users') || '[]');
+            let users = loadUsers();
             users = users.filter(u => u.email.toLowerCase() !== email.toLowerCase());
-            localStorage.setItem('users', JSON.stringify(users));
+            saveUsers(users);
             loadAdminData();
         }
 
