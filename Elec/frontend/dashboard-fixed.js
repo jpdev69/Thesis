@@ -634,39 +634,46 @@ function switchToSimpleMode() {
 //  SAMPLE DATA GENERATION
 // ============================================================
 
-function generateSampleDailyData() {
-    const sampleData = `Date,Consumption,Temperature,Humidity,Rainfall,HasClasses
-2024-09-01,1450,28.5,72,0,1
-2024-09-02,1520,29.2,68,0,1
-2024-09-03,1480,27.8,75,5.2,1
-2024-09-04,1510,28.9,70,0,1
-2024-09-05,1490,28.3,73,0,1
-2024-09-06,1150,26.5,78,12.5,0
-2024-09-07,1100,25.8,80,8.3,0
-2024-09-08,1460,28.1,71,0,1
-2024-09-09,1530,29.5,67,0,1
-2024-09-10,1470,28.4,74,3.1,1
-2024-09-11,1500,28.7,72,0,1
-2024-09-12,1485,28.2,73,0,1
-2024-09-13,1120,26.2,79,10.2,0
-2024-09-14,1090,25.5,81,7.5,0
-2024-09-15,1455,28.3,71,0,1
-2024-09-16,1525,29.3,68,0,1
-2024-09-17,1475,28.6,73,2.1,1
-2024-09-18,1505,28.8,71,0,1
-2024-09-19,1495,28.4,72,0,1
-2024-09-20,1145,26.4,78,11.3,0
-2024-09-21,1105,25.7,80,8.8,0
-2024-09-22,1465,28.2,71,0,1
-2024-09-23,1535,29.6,67,0,1
-2024-09-24,1480,28.5,74,3.5,1
-2024-09-25,1510,28.9,72,0,1
-2024-09-26,1490,28.3,73,0,1
-2024-09-27,1155,26.6,78,12.0,0
-2024-09-28,1110,25.9,80,8.0,0
-2024-09-29,1470,28.4,71,0,1
-2024-09-30,1540,29.7,67,0,1`;
+function generateDynamicSampleCSV(daysCount = 30) {
+    const header = "Date,Consumption,Temperature,Humidity,Rainfall,HasClasses\n";
+    const rows = [];
+    const baseDate = new Date();
+    baseDate.setDate(baseDate.getDate() - daysCount + 1);
 
+    const baseConsumptions = [1450, 1520, 1480, 1510, 1490, 1150, 1100, 1460, 1530, 1470];
+    const temps = [28.5, 29.2, 27.8, 28.9, 28.3, 26.5, 25.8, 28.1, 29.5, 28.4];
+    const hums = [72, 68, 75, 70, 73, 78, 80, 71, 67, 74];
+    const rains = [0, 0, 5.2, 0, 0, 12.5, 8.3, 0, 0, 3.1];
+
+    for (let i = 0; i < daysCount; i++) {
+        const currentDate = new Date(baseDate);
+        currentDate.setDate(baseDate.getDate() + i);
+        const yyyy = currentDate.getFullYear();
+        const mm = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(currentDate.getDate()).padStart(2, '0');
+        const dateStr = `${yyyy}-${mm}-${dd}`;
+
+        const dayOfWeek = currentDate.getDay();
+        const hasClasses = (dayOfWeek === 0 || dayOfWeek === 6) ? 0 : 1;
+        const patternIdx = i % 10;
+
+        let consumption = baseConsumptions[patternIdx];
+        let temp = temps[patternIdx];
+        let hum = hums[patternIdx];
+        let rain = rains[patternIdx];
+
+        if (hasClasses === 0 && consumption > 1200) {
+            consumption = Math.round(consumption * 0.75);
+        }
+
+        rows.push(`${dateStr},${consumption},${temp},${hum},${rain},${hasClasses}`);
+    }
+
+    return header + rows.join('\n');
+}
+
+function generateSampleDailyData() {
+    const sampleData = generateDynamicSampleCSV(30);
     document.getElementById('dailyDataInput').value = sampleData;
     logStatus('Sample daily data generated (30 days with weather & schedule)', 'success');
 }
@@ -737,17 +744,7 @@ function initializeForecastContext() {
         return restored;
     }
 
-    const sampleCsv = `Date,Consumption,Temperature,Humidity,Rainfall,HasClasses
-2024-09-01,1450,28.5,72,0,1
-2024-09-02,1520,29.2,68,0,1
-2024-09-03,1480,27.8,75,5.2,1
-2024-09-04,1510,28.9,70,0,1
-2024-09-05,1490,28.3,73,0,1
-2024-09-06,1150,26.5,78,12.5,0
-2024-09-07,1100,25.8,80,8.3,0
-2024-09-08,1460,28.1,71,0,1
-2024-09-09,1530,29.5,67,0,1
-2024-09-10,1470,28.4,74,3.1,1`;
+    const sampleCsv = generateDynamicSampleCSV(30);
 
     dailyModel = new DailyPredictor();
     const dailyData = dailyModel.parseDailyData(sampleCsv);
@@ -908,7 +905,7 @@ function makeDailyForecast() {
             // Anomaly check on forecast
             const forecastAnomalies = dailyModel.detectAnomalies(predictions, 1.5);
             if (forecastAnomalies.length > 0) {
-                logStatus(`⚠ ${forecastAnomalies.length} unusual day(s) detected in forecast`, 'error');
+                logStatus(`${forecastAnomalies.length} unusual day(s) detected in forecast`, 'error');
             }
 
             const costPerKwh = 12.383;
@@ -1110,10 +1107,8 @@ function updateAnomalyPanel(anomalies, dates) {
 
     container.innerHTML = anomalies.map(a => {
         const dateStr = dates && a.index < dates.length ? dates[a.index] : `Day ${a.index + 1}`;
-        const icon = a.type === 'spike' ? '📈' : '📉';
         const cls = a.type === 'spike' ? 'spike' : 'dip';
         return `<div class="anomaly-item ${cls}">
-            <span class="anomaly-icon">${icon}</span>
             <div class="anomaly-detail">
                 <strong>${dateStr}</strong>: ${a.value.toFixed(2)} kWh
                 <span class="anomaly-badge ${cls}">${a.type === 'spike' ? '+' : ''}${a.deviationPct}%</span>
@@ -1271,7 +1266,7 @@ function toggleTheme() {
 }
 
 function loadTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'light';
+    const savedTheme = localStorage.getItem('theme') || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
     const sunIcon = document.getElementById('sunIcon');
     const moonIcon = document.getElementById('moonIcon');

@@ -62,13 +62,13 @@ function toggleTheme() {
 }
 
 function loadTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'light';
+    const savedTheme = localStorage.getItem('theme') || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
     const sunIcon = document.getElementById('sunIcon');
     const moonIcon = document.getElementById('moonIcon');
-    if (savedTheme === 'dark') {
-        if (sunIcon) sunIcon.style.display = 'none';
-        if (moonIcon) moonIcon.style.display = 'block';
+    if (sunIcon && moonIcon) {
+        sunIcon.style.display = savedTheme === 'dark' ? 'none' : 'block';
+        moonIcon.style.display = savedTheme === 'dark' ? 'block' : 'none';
     }
 }
 
@@ -222,18 +222,20 @@ async function refreshCharts() {
 }
 
 // ============================================================
-//  DEFAULT FALLBACK DATA (July 2026)
+//  DEFAULT FALLBACK DATA (Current Date Onwards)
 // ============================================================
 
 function defaultConsumption() {
-    // Generate realistic daily consumption pattern for July 2026
     const baseLoad = 3200;
     const data = [];
-    for (let i = 0; i < 30; i++) {
-        const dayOfWeek = (new Date('2026-07-01').getDay() + i) % 7;
+    const today = new Date();
+    for (let i = 29; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        const dayOfWeek = d.getDay();
         const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
         const weekendFactor = isWeekend ? 0.75 : 1.0;
-        const randomVariation = 0.85 + Math.random() * 0.3; // 85% to 115%
+        const randomVariation = 0.85 + Math.random() * 0.3;
         data.push(Math.round(baseLoad * weekendFactor * randomVariation));
     }
     return data;
@@ -241,7 +243,7 @@ function defaultConsumption() {
 
 function defaultDates() {
     const dates = [];
-    const today = new Date('2026-07-05'); // Current date
+    const today = new Date();
     for (let i = 29; i >= 0; i--) {
         const d = new Date(today);
         d.setDate(d.getDate() - i);
@@ -251,11 +253,12 @@ function defaultDates() {
 }
 
 function getCurrentDateInfo() {
+    const today = new Date();
     return {
-        today: new Date('2026-07-05'),
-        formattedDate: 'July 5, 2026',
-        dayOfWeek: 'Sunday',
-        monthYear: 'July 2026'
+        today: today,
+        formattedDate: today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+        dayOfWeek: today.toLocaleDateString('en-US', { weekday: 'long' }),
+        monthYear: today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     };
 }
 

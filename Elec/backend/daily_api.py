@@ -7,8 +7,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import numpy as np
+import os
 import sys
-sys.path.append('..')
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from src.models.daily_prediction_model import DailyEnergyPredictor
 
@@ -91,7 +92,7 @@ async def train_daily_model(data: DailyTrainingData):
         is_weekend = np.array(data.is_weekend)
         
         # Initialize and train model
-        model = DailyEnergyPredictor(sequence_length=7, lstm_weight=0.7)
+        model = DailyEnergyPredictor(sequence_length=7)
         
         history = model.train(
             consumption, temperature, humidity, rainfall,
@@ -206,10 +207,10 @@ if __name__ == "__main__":
     print("\nStarting server on http://localhost:8000")
     print("API Documentation: http://localhost:8000/docs")
     print("\nFeatures:")
-    print("  ✓ Daily consumption predictions")
-    print("  ✓ Weather integration (temperature, humidity, rainfall)")
-    print("  ✓ Class schedule awareness")
-    print("  ✓ Enhanced LSTM-SVM hybrid model")
+    print("  [x] Daily consumption predictions")
+    print("  [x] Weather integration (temperature, humidity, rainfall)")
+    print("  [x] Class schedule awareness")
+    print("  [x] Enhanced LSTM-SVM hybrid model")
     print("="*70)
     
     uvicorn.run(app, host="0.0.0.0", port=8000)
