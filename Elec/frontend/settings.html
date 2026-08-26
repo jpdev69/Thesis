@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <title>Settings - EnergyAI</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="dashboard.css?v=4">
     <style>
         .settings-section {
             margin-bottom: 32px;
@@ -117,9 +117,11 @@
                 <span>EnergyAI</span>
             </div>
             <div class="sidebar-controls">
-                <button class="sidebar-control-btn" onclick="toggleSidebar()" title="Minimize sidebar">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="15 18 9 12 15 6"/>
+                <button class="sidebar-control-btn" onclick="toggleSidebar()" title="Toggle sidebar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="6" x2="21" y2="6"/>
+                        <line x1="3" y1="12" x2="21" y2="12"/>
+                        <line x1="3" y1="18" x2="21" y2="18"/>
                     </svg>
                 </button>
             </div>
@@ -158,14 +160,21 @@
                 </svg>
                 <span>Settings</span>
             </a>
+            <button onclick="simpleLogout()" class="nav-item" style="background:none; border:none; color:#ef4444; width:100%; text-align:left; cursor:pointer;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                <span style="color:#ef4444; font-weight:600;">Sign Out</span>
+            </button>
         </nav>
 
         <div class="sidebar-footer">
             <div class="user-profile">
-                <div class="avatar">AD</div>
+                <div class="avatar">US</div>
                 <div class="user-info">
-                    <div class="user-name">Admin User</div>
-                    <div class="user-role">Administrator</div>
+                    <div class="user-name">User Account</div>
                 </div>
             </div>
         </div>
@@ -173,8 +182,10 @@
 
     <!-- Expand Button (shown when sidebar is minimized) -->
     <button class="sidebar-expand-btn" id="sidebarExpandBtn" onclick="toggleSidebar()" title="Expand sidebar">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="9 18 15 12 9 6"/>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
         </svg>
     </button>
 
@@ -591,7 +602,7 @@
         </div>
     </main>
 
-    <script src="auth.js?v=20260704"></script>
+    <script src="auth.js?v=20260805d"></script>
     <script>
         // Prevent any errors from closing the page
         window.addEventListener('error', function(e) {
@@ -651,15 +662,15 @@
         window.addEventListener('DOMContentLoaded', () => {
             loadSidebarState();
             
-            const savedTheme = localStorage.getItem('theme') || 'light';
+            const savedTheme = localStorage.getItem('theme') || 'dark';
             document.documentElement.setAttribute('data-theme', savedTheme);
             
             const sunIcon = document.getElementById('sunIcon');
             const moonIcon = document.getElementById('moonIcon');
             
-            if (savedTheme === 'dark') {
-                if (sunIcon) sunIcon.style.display = 'none';
-                if (moonIcon) moonIcon.style.display = 'block';
+            if (sunIcon && moonIcon) {
+                sunIcon.style.display = savedTheme === 'dark' ? 'none' : 'block';
+                moonIcon.style.display = savedTheme === 'dark' ? 'block' : 'none';
             }
         });
 

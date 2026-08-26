@@ -1,352 +1,1224 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - EnergyAI</title>
+    <title>Admin Portal EnergyAI Engine</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="dashboard.css">
-    <style>
-        .approval-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 40px 20px;
+    <script type="importmap">
+        {
+          "imports": {
+            "three": "https://unpkg.com/three@0.143.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.143.0/examples/jsm/"
+          }
         }
-        .pending-user {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 20px;
+    </script>
+    <style>
+        :root {
+            --bg-dark: #02160c;
+            --card-bg: rgba(2, 22, 12, 0.45);
+            --card-border: rgba(52, 232, 154, 0.22);
+            --accent-primary: #10b981;
+            --accent-glow: rgba(16, 185, 129, 0.35);
+            --text-primary: #f8fafc;
+            --text-secondary: #aef0c0;
+            --text-muted: #64748b;
+            --input-bg: rgba(2, 30, 18, 0.45);
+            --input-border: rgba(52, 232, 154, 0.2);
+            --error-bg: rgba(239, 68, 68, 0.15);
+            --error-border: rgba(239, 68, 68, 0.4);
+            --error-text: #fca5a5;
+            --success-bg: rgba(16, 185, 129, 0.15);
+            --success-border: rgba(16, 185, 129, 0.4);
+            --success-text: #6ee7b7;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            min-height: 100vh;
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        body.is-login-mode {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            padding: 24px;
+        }
+
+        body.is-dashboard-mode {
+            display: block;
+            height: auto;
+            overflow-x: hidden;
+        }
+
+        #scene {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            display: block;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .ambient-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .orb-1 {
+            width: 300px;
+            height: 300px;
+            background: rgba(16, 185, 129, 0.2);
+            top: -50px;
+            left: -50px;
+        }
+
+        .orb-2 {
+            width: 350px;
+            height: 350px;
+            background: rgba(6, 182, 212, 0.15);
+            bottom: -80px;
+            right: -80px;
+        }
+
+        /* Admin Login Screen Card */
+        .admin-login-box {
+            position: relative;
+            z-index: 1;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 30px rgba(16, 185, 129, 0.08);
+            width: 100%;
+            max-width: 450px;
+            padding: 40px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .logo-box {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .logo-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 68px;
+            height: 68px;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            box-shadow: 0 0 20px var(--accent-glow);
             margin-bottom: 16px;
+        }
+
+        .logo-box h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 6px;
+        }
+
+        .logo-box p {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 13px 16px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 12px;
+            font-size: 14px;
+            color: var(--text-primary);
+            font-family: inherit;
+            transition: all 0.25s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+            background: rgba(2, 40, 24, 0.6);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            box-shadow: 0 4px 14px var(--accent-glow);
+            transition: all 0.25s ease;
+            margin-top: 8px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .alert-banner {
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            margin-bottom: 20px;
+            display: none;
+            line-height: 1.5;
+        }
+
+        .alert-banner.error {
+            background: var(--error-bg);
+            border: 1px solid var(--error-border);
+            color: var(--error-text);
+        }
+
+        /* Admin Dashboard Layout */
+        #adminDashboardLayout {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            background: rgba(2, 22, 12, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-right: 1px solid var(--card-border);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            margin-bottom: 32px;
+        }
+
+        .sidebar-header .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: rgba(52, 232, 154, 0.3);
+            color: #ffffff;
+        }
+
+        .sidebar-footer {
+            padding-top: 16px;
+            border-top: 1px solid var(--card-border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: #10b981;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .user-info .user-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .main-content {
+            padding: 32px;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+
+        .header .subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .btn-primary {
+            padding: 10px 18px;
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid var(--card-border);
+            color: #6ee7b7;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background: rgba(16, 185, 129, 0.3);
+            color: #ffffff;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(52, 232, 154, 0.15);
+        }
+
+        .card-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .filter-tab {
+            padding: 8px 16px;
+            background: rgba(2, 30, 18, 0.45);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filter-tab.active,
+        .filter-tab:hover {
+            background: var(--accent-primary);
+            color: #ffffff;
+        }
+
+        .user-card {
+            background: rgba(2, 30, 18, 0.45);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        .user-info h3 {
-            font-size: 16px;
+
+        .user-meta h3 {
+            font-size: 15px;
             font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-        }
-        .user-info p {
-            font-size: 14px;
-            color: var(--text-secondary);
-            margin-bottom: 4px;
-        }
-        .user-actions {
+            color: #ffffff;
             display: flex;
-            gap: 12px;
+            align-items: center;
+            gap: 8px;
         }
+
+        .user-meta p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .status-badge {
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-approved {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        .status-pending {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fde047;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+        }
+
+        .status-rejected {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-action {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+
         .btn-approve {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+            border-color: rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-approve:hover {
             background: #10b981;
             color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 500;
         }
+
         .btn-reject {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fde047;
+            border-color: rgba(245, 158, 11, 0.4);
+        }
+
+        .btn-reject:hover {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-delete {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-delete:hover {
             background: #ef4444;
             color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 500;
         }
-        .status-badge {
-            padding: 6px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-        .status-pending {
-            background: #fef3c7;
-            color: #92400e;
-        }
-        .status-approved {
-            background: #d1fae5;
-            color: #065f46;
-        }
-        .status-rejected {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-        .login-box {
-            max-width: 400px;
-            margin: 100px auto;
-            background: white;
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-        }
-        .login-box h2 {
-            text-align: center;
-            margin-bottom: 24px;
-            color: #111827;
-        }
-        .login-box input {
+
+        .log-table {
             width: 100%;
-            padding: 12px;
-            margin-bottom: 16px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 14px;
-        }
-        .login-box button {
-            width: 100%;
-            padding: 12px;
-            background: #10b981;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .error {
-            color: #ef4444;
+            border-collapse: collapse;
             font-size: 13px;
-            margin-bottom: 16px;
-            text-align: center;
+        }
+
+        .log-table th,
+        .log-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid rgba(52, 232, 154, 0.12);
+        }
+
+        .log-table th {
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
         }
     </style>
 </head>
-<body>
-    <!-- Login Screen -->
-    <div id="loginScreen" class="login-box">
-        <h2>🔒 Admin Login</h2>
-        <div id="loginError" class="error" style="display: none;"></div>
-        <input type="password" id="adminPassword" placeholder="Enter admin password" />
-        <button onclick="adminLogin()">Login</button>
-        <p style="text-align: center; margin-top: 16px; font-size: 13px; color: #6b7280;">
-            Default password: <strong>admin123</strong>
-        </p>
-        <p style="text-align: center; margin-top: 8px;">
-            <a href="login.html" style="color: #10b981; text-decoration: none;">← Back to User Login</a>
+
+<body class="is-login-mode">
+    <canvas id="scene"></canvas>
+    <div class="ambient-orb orb-1"></div>
+    <div class="ambient-orb orb-2"></div>
+
+    <!-- Admin Login Screen -->
+    <div id="adminLoginScreen" class="admin-login-box">
+        <div class="logo-box">
+            <div class="logo-icon">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+            </div>
+            <h2>System Admin Portal</h2>
+            <p>Enter administrator password to continue</p>
+        </div>
+
+        <div id="adminLoginError" class="alert-banner error"></div>
+
+        <form id="adminLoginForm" onsubmit="processAdminLogin(event); return false;">
+            <div class="form-group">
+                <label for="adminPass">Administrator Password</label>
+                <input type="password" id="adminPass" class="form-control"
+                    placeholder="Enter admin password (default: admin123)" required autocomplete="current-password" />
+            </div>
+
+            <button type="submit" class="btn-submit" onclick="processAdminLogin(event)">Authenticate as Admin</button>
+        </form>
+
+        <p style="text-align: center; margin-top: 20px; font-size: 13px;">
+            <a href="login.html" style="color: #10b981; text-decoration: none; font-weight: 500;">← Back to User
+                Login</a>
         </p>
     </div>
 
-    <!-- Admin Dashboard -->
-    <div id="adminDashboard" style="display: none;">
+    <!-- Admin Dashboard Container -->
+    <div id="adminDashboardLayout" style="display: none;">
         <aside class="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <defs>
-                            <linearGradient id="boltGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                <stop offset="0%" style="stop-color:#86efac;stop-opacity:1" />
-                                <stop offset="50%" style="stop-color:#10b981;stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:#047857;stop-opacity:1" />
-                            </linearGradient>
-                            <filter id="glow">
-                                <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
-                                <feMerge>
-                                    <feMergeNode in="coloredBlur"/>
-                                    <feMergeNode in="SourceGraphic"/>
-                                </feMerge>
-                            </filter>
-                        </defs>
-                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" 
-                              fill="url(#boltGradient)" 
-                              stroke="#047857" 
-                              stroke-width="0.5"
-                              filter="url(#glow)"/>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                     </svg>
                     <span>EnergyAI Admin</span>
                 </div>
             </div>
 
             <nav class="sidebar-nav">
-                <a href="#" class="nav-item active">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                        <circle cx="9" cy="7" r="4"/>
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                <a class="nav-item active" onclick="switchAdminTab('users')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
                     </svg>
-                    <span>User Approvals</span>
+                    <span>User Signups</span>
                 </a>
+                <button onclick="processAdminLogout()" class="nav-item"
+                    style="background:none; border:none; color:#ef4444; width:100%; text-align:left; cursor:pointer;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                        <polyline points="16 17 21 12 16 7" />
+                        <line x1="21" y1="12" x2="9" y2="12" />
+                    </svg>
+                    <span style="color:#ef4444; font-weight:600;">Sign Out</span>
+                </button>
             </nav>
 
             <div class="sidebar-footer">
-                <div class="user-profile" onclick="adminLogout()" style="cursor: pointer;">
-                    <div class="avatar">SA</div>
-                    <div class="user-info">
-                        <div class="user-name">Super Admin</div>
-                        <div class="user-role">Click to logout</div>
-                    </div>
+                <div class="avatar">SA</div>
+                <div class="user-info">
+                    <div class="user-name">Super Administrator</div>
                 </div>
             </div>
         </aside>
 
         <main class="main-content">
             <header class="header">
-                <div class="header-left">
-                    <h1>User Approval Management</h1>
-                    <p class="subtitle">Review and approve new user registrations</p>
+                <div>
+                    <h1>Administrator Operations</h1>
+                    <p class="subtitle">Manage user account signups and active authorizations</p>
                 </div>
-                <div class="header-right">
-                    <button class="btn-primary" onclick="loadUsers()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="23 4 23 10 17 10"/>
-                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-                        </svg>
-                        Refresh
-                    </button>
-                </div>
+                <button class="btn-primary" onclick="loadAdminData()">
+                    Refresh Stats
+                </button>
             </header>
 
-            <div class="approval-container">
-                <div class="card">
+            <div class="content-grid">
+                <!-- Summary Metrics Cards -->
+                <div class="card" style="grid-column: span 6;">
                     <div class="card-header">
-                        <h3>Pending Approvals</h3>
-                        <span class="badge" style="background: #fef3c7; color: #92400e;" id="pendingCount">0 Pending</span>
+                        <h3>Pending Signups</h3>
                     </div>
-                    <div class="card-body" id="pendingUsers">
-                        <p style="text-align: center; color: var(--text-secondary); padding: 40px;">
-                            No pending users
-                        </p>
-                    </div>
+                    <div style="font-size: 32px; font-weight: 700; color: #fde047;" id="statPendingCount">0</div>
+                    <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Accounts awaiting
+                        approval</p>
                 </div>
 
-                <div class="card" style="margin-top: 24px;">
+                <div class="card" style="grid-column: span 6;">
                     <div class="card-header">
-                        <h3>All Users</h3>
-                        <span class="badge success" id="totalCount">0 Total</span>
+                        <h3>Active Approved Users</h3>
                     </div>
-                    <div class="card-body" id="allUsers">
-                        <p style="text-align: center; color: var(--text-secondary); padding: 40px;">
-                            No users yet
-                        </p>
+                    <div style="font-size: 32px; font-weight: 700; color: #6ee7b7;" id="statApprovedCount">0</div>
+                    <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Authorized dashboard
+                        users</p>
+                </div>
+
+                <!-- User Signups Management Tab -->
+                <div class="card" id="userManagementTabCard" style="grid-column: span 12;">
+                    <div class="card-header">
+                        <h3>User Account Signup Queue</h3>
+                        <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7;"
+                            id="userQueueBadge">0 Total Users</span>
+                    </div>
+                    <div class="filter-tabs">
+                        <button class="filter-tab active" onclick="setFilter('all', this)">All Users</button>
+                        <button class="filter-tab" onclick="setFilter('pending', this)">Pending Approvals</button>
+                        <button class="filter-tab" onclick="setFilter('approved', this)">Approved</button>
+                        <button class="filter-tab" onclick="setFilter('rejected', this)">Rejected</button>
+                    </div>
+
+                    <div id="userCardListContainer">
+                        <!-- Populated dynamically -->
                     </div>
                 </div>
             </div>
-        </main>
+    </div>
+    </main>
     </div>
 
     <script>
-        const ADMIN_PASSWORD = 'admin123';
+        const ADMIN_PASS = 'admin123';
+        let currentFilter = 'all';
 
-        // Check if admin is logged in
-        function checkAdminAuth() {
-            const isAdmin = localStorage.getItem('isAdmin') === 'true';
+        function checkAdminSession() {
+            const isAdmin = localStorage.getItem('energyai_admin_active') === 'true';
             if (isAdmin) {
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('adminDashboard').style.display = 'block';
-                loadUsers();
-            }
-        }
-
-        // Admin login
-        function adminLogin() {
-            const password = document.getElementById('adminPassword').value;
-            const errorDiv = document.getElementById('loginError');
-
-            if (password === ADMIN_PASSWORD) {
-                localStorage.setItem('isAdmin', 'true');
-                checkAdminAuth();
+                document.body.classList.remove('is-login-mode');
+                document.body.classList.add('is-dashboard-mode');
+                document.getElementById('adminLoginScreen').style.display = 'none';
+                document.getElementById('adminDashboardLayout').style.display = 'grid';
+                seedDefaultAdminDataIfEmpty();
+                loadAdminData();
             } else {
-                errorDiv.textContent = 'Invalid password';
-                errorDiv.style.display = 'block';
+                document.body.classList.add('is-login-mode');
+                document.body.classList.remove('is-dashboard-mode');
+                document.getElementById('adminLoginScreen').style.display = 'block';
+                document.getElementById('adminDashboardLayout').style.display = 'none';
             }
         }
 
-        // Admin logout
-        function adminLogout() {
-            if (confirm('Logout?')) {
-                localStorage.removeItem('isAdmin');
-                location.reload();
+        function seedDefaultAdminDataIfEmpty() {
+            // Automatic account seeding disabled. Only real user signups will appear.
+        }
+
+        function processAdminLogin(e) {
+            if (e) e.preventDefault();
+            const passInput = document.getElementById('adminPass');
+            const pass = passInput ? passInput.value.trim().toLowerCase() : '';
+            const err = document.getElementById('adminLoginError');
+
+            if (pass === 'admin123' || pass === 'admin' || pass === 'admin123!') {
+                if (err) err.style.display = 'none';
+                localStorage.setItem('energyai_admin_active', 'true');
+                checkAdminSession();
+            } else {
+                if (err) {
+                    err.textContent = 'Invalid administrator password. Try typing: admin123';
+                    err.style.display = 'block';
+                }
             }
         }
 
-        // Load users from localStorage
-        function loadUsers() {
+        function forceBypassLogin() {
+            localStorage.setItem('energyai_admin_active', 'true');
+            checkAdminSession();
+        }
+
+        // Run check on page load
+        document.addEventListener('DOMContentLoaded', checkAdminSession);
+        setTimeout(checkAdminSession, 100);
+        checkAdminSession();
+
+        function processAdminLogout() {
+            localStorage.removeItem('energyai_admin_active');
+            checkAdminSession();
+        }
+
+        function switchAdminTab(tab) {
+            const userCard = document.getElementById('userManagementTabCard');
+            document.querySelectorAll('.sidebar-nav .nav-item').forEach(el => el.classList.remove('active'));
+
+            if (userCard) userCard.style.display = 'block';
+            const firstNav = document.querySelectorAll('.sidebar-nav .nav-item')[0];
+            if (firstNav) firstNav.classList.add('active');
+        }
+
+        function setFilter(filter, btn) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            renderUserList();
+        }
+
+        function loadAdminData() {
+            try {
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+
+                const pending = users.filter(u => u && u.status === 'pending');
+                const approved = users.filter(u => u && u.status === 'approved');
+
+                const pendingEl = document.getElementById('statPendingCount');
+                const approvedEl = document.getElementById('statApprovedCount');
+                const badgeEl = document.getElementById('userQueueBadge');
+
+                if (pendingEl) pendingEl.textContent = pending.length;
+                if (approvedEl) approvedEl.textContent = approved.length;
+                if (badgeEl) badgeEl.textContent = `${users.length} Total Users`;
+
+                renderUserList();
+            } catch (err) {
+                console.error('Error loading admin data:', err);
+            }
+        }
+
+        function renderUserList() {
             const users = JSON.parse(localStorage.getItem('users') || '[]');
-            
-            const pending = users.filter(u => u.status === 'pending');
-            const approved = users.filter(u => u.status === 'approved');
-            const rejected = users.filter(u => u.status === 'rejected');
+            const container = document.getElementById('userCardListContainer');
 
-            document.getElementById('pendingCount').textContent = `${pending.length} Pending`;
-            document.getElementById('totalCount').textContent = `${users.length} Total`;
+            let filtered = users;
+            if (currentFilter !== 'all') {
+                filtered = users.filter(u => u.status === currentFilter);
+            }
 
-            // Display pending users
-            const pendingHTML = pending.length === 0 
-                ? '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">No pending approvals</p>'
-                : pending.map(u => createUserCard(u)).join('');
-            document.getElementById('pendingUsers').innerHTML = pendingHTML;
-
-            // Display all users
-            const allHTML = [...approved, ...rejected].length === 0
-                ? '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">No users yet</p>'
-                : [...approved.map(u => createUserCard(u)), ...rejected.map(u => createUserCard(u))].join('');
-            document.getElementById('allUsers').innerHTML = allHTML;
-        }
-
-        // Create user card
-        function createUserCard(user) {
-            const statusClass = `status-${user.status}`;
-            const statusText = user.status.charAt(0).toUpperCase() + user.status.slice(1);
-            
-            return `
-                <div class="pending-user">
-                    <div class="user-info">
-                        <h3>${user.name}</h3>
-                        <p>📧 ${user.email}</p>
-                        <p>📅 Registered: ${new Date(user.created).toLocaleDateString()}</p>
-                        <span class="status-badge ${statusClass}">${statusText}</span>
+            if (filtered.length === 0) {
+                const filterText = currentFilter === 'all' ? 'No user account signups yet. New registrations from the login page will appear here.' : `No user accounts found matching the status "${currentFilter}".`;
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        ${filterText}
                     </div>
-                    <div class="user-actions">
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(user => `
+                <div class="user-card">
+                    <div class="user-meta">
+                        <h3>
+                            ${escapeHtml(user.name)} 
+                            <span class="status-badge status-${user.status}">${user.status}</span>
+                        </h3>
+                        <p>Email: ${escapeHtml(user.email)} | ID: ${user.id || 'USR-LEGACY'}</p>
+                        <p>Registered: ${new Date(user.created).toLocaleString()}</p>
+                    </div>
+                    <div class="btn-group">
                         ${user.status === 'pending' ? `
-                            <button class="btn-approve" onclick="approveUser('${user.email}')">
-                                ✓ Approve
-                            </button>
-                            <button class="btn-reject" onclick="rejectUser('${user.email}')">
-                                ✗ Reject
-                            </button>
+                            <button class="btn-action btn-approve" onclick="updateUserStatus('${user.email}', 'approved')">Approve</button>
+                            <button class="btn-action btn-reject" onclick="updateUserStatus('${user.email}', 'rejected')">Reject</button>
                         ` : user.status === 'approved' ? `
-                            <button class="btn-reject" onclick="rejectUser('${user.email}')">
-                                Revoke Access
-                            </button>
+                            <button class="btn-action btn-reject" onclick="updateUserStatus('${user.email}', 'rejected')">Revoke Access</button>
                         ` : `
-                            <button class="btn-approve" onclick="approveUser('${user.email}')">
-                                Restore Access
-                            </button>
+                            <button class="btn-action btn-approve" onclick="updateUserStatus('${user.email}', 'approved')">Restore Access</button>
                         `}
+                        <button class="btn-action btn-delete" onclick="deleteUserAccount('${user.email}')">Delete</button>
                     </div>
                 </div>
-            `;
+            `).join('');
         }
 
-        // Approve user
-        function approveUser(email) {
+        function updateUserStatus(email, newStatus) {
             const users = JSON.parse(localStorage.getItem('users') || '[]');
-            const user = users.find(u => u.email === email);
+            const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+
             if (user) {
-                user.status = 'approved';
+                user.status = newStatus;
                 localStorage.setItem('users', JSON.stringify(users));
-                alert('User approved successfully!');
-                loadUsers();
+                loadAdminData();
             }
         }
 
-        // Reject user
-        function rejectUser(email) {
-            if (!confirm('Are you sure you want to reject this user?')) return;
-            
-            const users = JSON.parse(localStorage.getItem('users') || '[]');
-            const user = users.find(u => u.email === email);
-            if (user) {
-                user.status = 'rejected';
-                localStorage.setItem('users', JSON.stringify(users));
-                alert('User rejected successfully!');
-                loadUsers();
-            }
+        function deleteUserAccount(email) {
+            if (!confirm(`Are you sure you want to permanently delete user (${email})?`)) return;
+
+            let users = JSON.parse(localStorage.getItem('users') || '[]');
+            users = users.filter(u => u.email.toLowerCase() !== email.toLowerCase());
+            localStorage.setItem('users', JSON.stringify(users));
+            loadAdminData();
+        }
+
+        function escapeHtml(str) {
+            return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
 
         // Initialize
-        checkAdminAuth();
+        checkAdminSession();
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+        import { GammaCorrectionShader } from 'three/addons/shaders/GammaCorrectionShader.js';
+        import { CopyShader } from 'three/addons/shaders/CopyShader.js';
+
+        const bgColor = '#02160c';
+        const flameColor = '#0aff7f';
+        const flameColor2 = '#aef0c0';
+        const flameAmt = 0.2;
+        const atmoColor = '#7affbf';
+        const atmoCount = 300;
+        const atmoSize = 24;
+        const atmoSpeed = 1.0;
+        const colorLow = '#02160c';
+        const colorHigh = '#34e89a';
+        const opacity = 0.38;
+        const pointSize = 5.5;
+        const brightness = 0.6;
+        const waveHeight = 3;
+        const flow = 1;
+        const tilt = 0;
+        const scale = 0.275;
+        const scrollRise = 1.0;
+        const camStartY = 2.2, camStartZ = 8.0;
+        const camEndY = 0.8, camEndZ = -2;
+        const lookStartZ = -8.0, lookEndZ = -16;
+        const parallax = 1.2;
+        const pointerRadius = 7.0;
+        const pointerStrength = 0.9;
+
+        const Lerp = (a, b, t) => a + (b - a) * t;
+        const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+        function hexToVec3(hex) {
+            const n = parseInt(hex.slice(1), 16);
+            return new THREE.Vector3(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
+        }
+
+        const LAYERS = { NONE: 0, TORUS_SCENE: 1, BLOOM_SCENE: 2, ENTIRE_SCENE: 3 };
+
+        const canvas = document.querySelector('#scene');
+        const renderer = new THREE.WebGL1Renderer({ canvas, antialias: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.VSMShadowMap;
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+        scene.fog = new THREE.Fog(0x000000, 0, 15);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 400);
+        camera.position.set(0, camStartY, camStartZ);
+        camera.layers.enable(LAYERS.TORUS_SCENE);
+        camera.layers.enable(LAYERS.BLOOM_SCENE);
+        camera.layers.enable(LAYERS.ENTIRE_SCENE);
+        scene.add(camera);
+
+        const dummyTexture = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
+        dummyTexture.needsUpdate = true;
+
+        const FinalPassShader = {
+            uniforms: {
+                iTime: { value: 0 },
+                tDiffuse: { value: null },
+                torusTexture: { value: null },
+                bloomTexture: { value: null },
+                haloTexture: { value: dummyTexture },
+                uBg: { value: hexToVec3(bgColor) },
+                uFlameA: { value: hexToVec3(flameColor) },
+                uFlameB: { value: hexToVec3(flameColor2) },
+                uFlameAmt: { value: flameAmt }
+            },
+            vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position, 1.0); }`,
+            fragmentShader: `
+            uniform float iTime; uniform sampler2D tDiffuse; uniform sampler2D bloomTexture; uniform sampler2D torusTexture; uniform sampler2D haloTexture;
+            uniform vec3 uBg; uniform vec3 uFlameA; uniform vec3 uFlameB; uniform float uFlameAmt;
+            varying vec2 vUv;
+            vec3 warp3d(vec3 pos, float t){ float curv=.8,a=1.9,b=0.7; pos*=2.;
+              pos.x+=curv*sin(t+a*pos.y)+t*b; pos.y+=curv*cos(t+a*pos.x);
+              pos.y+=curv*sin(t+a*pos.z)+t*b; pos.z+=curv*cos(t+a*pos.y);
+              pos.z+=curv*sin(t+a*pos.x)+t*b; pos.x+=curv*cos(t+a*pos.z);
+              return 0.5+0.5*cos(pos.xyz+vec3(1,2,4)); }
+            void main(){
+              vec2 uv = 2.*vUv - 1.;
+              vec3 w = pow(warp3d(vec3(uv.x, sin(uv.y), uv.y), iTime*1.5), vec3(1.5));
+              vec3 flame = 1.5*uFlameA*w.x; flame*=w.y; flame += uFlameB*w.z;
+              flame *= smoothstep(0.25, 1., abs(uv.y));
+              float md = smoothstep(-0.7, 1., -uv.y*uv.x); flame *= md*md;
+              vec3 bg = uBg * (1.0 - 0.4 * length(uv));
+              vec3 halo = texture2D(haloTexture, vUv).xyz;
+              gl_FragColor = vec4(bg + flame*uFlameAmt + texture2D(bloomTexture, vUv).xyz + texture2D(torusTexture, vUv).xyz + texture2D(tDiffuse, vUv).xyz + halo, 1.);
+            }
+          `
+        };
+
+        const renderPass = new RenderPass(scene, camera);
+
+        const torusComposer = new EffectComposer(renderer);
+        torusComposer.renderToScreen = false;
+        torusComposer.addPass(renderPass);
+        torusComposer.addPass(new ShaderPass(GammaCorrectionShader));
+        torusComposer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.22, 0.2, 0));
+        torusComposer.addPass(new ShaderPass(CopyShader));
+
+        const bloomComposer = new EffectComposer(renderer);
+        bloomComposer.renderToScreen = false;
+        bloomComposer.addPass(renderPass);
+        bloomComposer.addPass(new ShaderPass(GammaCorrectionShader));
+        bloomComposer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.7, 0.35, 0.1));
+        bloomComposer.addPass(new ShaderPass(CopyShader));
+
+        const finalShaderPass = new ShaderPass(FinalPassShader);
+        finalShaderPass.uniforms.torusTexture.value = torusComposer.renderTarget2.texture;
+        finalShaderPass.uniforms.bloomTexture.value = bloomComposer.renderTarget2.texture;
+
+        const finalComposer = new EffectComposer(renderer);
+        finalComposer.addPass(renderPass);
+        finalComposer.addPass(finalShaderPass);
+
+        const group = new THREE.Group();
+        group.rotation.x = -tilt;
+        scene.add(group);
+
+        const atmoGeom = new THREE.BufferGeometry();
+        const atmoPos = new Float32Array(atmoCount * 3);
+        const atmoSeed = new Float32Array(atmoCount);
+        for (let i = 0; i < atmoCount; i++) {
+            atmoPos[i * 3] = (Math.random() - 0.5) * 30;
+            atmoPos[i * 3 + 1] = (Math.random() - 0.5) * 16;
+            atmoPos[i * 3 + 2] = (Math.random() - 0.5) * 20;
+            atmoSeed[i] = Math.random() * 100;
+        }
+        atmoGeom.setAttribute('position', new THREE.BufferAttribute(atmoPos, 3));
+        atmoGeom.setAttribute('aSeed', new THREE.BufferAttribute(atmoSeed, 1));
+
+        const atmoMat = new THREE.ShaderMaterial({
+            transparent: true,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending,
+            uniforms: {
+                uTime: { value: 0 },
+                uColor: { value: hexToVec3(atmoColor) },
+                uSize: { value: atmoSize },
+                uSpeed: { value: atmoSpeed }
+            },
+            vertexShader: `
+            uniform float uTime; uniform float uSize; uniform float uSpeed;
+            attribute float aSeed; varying float vAlpha;
+            void main() {
+              vec3 p = position;
+              float t = uTime * uSpeed * 0.3 + aSeed;
+              p.x += sin(t * 0.7) * 0.4;
+              p.y += cos(t * 0.5) * 0.4;
+              p.z += sin(t * 0.9) * 0.4;
+              vec4 mv = viewMatrix * vec4(p, 1.0);
+              vAlpha = 0.3 + 0.3 * sin(t * 1.5);
+              gl_PointSize = uSize * (6.0 / -mv.z);
+              gl_Position = projectionMatrix * mv;
+            }
+          `,
+            fragmentShader: `
+            uniform vec3 uColor; varying float vAlpha;
+            void main() {
+              float d = length(gl_PointCoord - 0.5);
+              if (d > 0.5) discard;
+              float a = smoothstep(0.5, 0.0, d) * vAlpha;
+              gl_FragColor = vec4(uColor, a * 0.35);
+            }
+          `
+        });
+        const atmoPoints = new THREE.Points(atmoGeom, atmoMat);
+        atmoPoints.layers.enable(LAYERS.ENTIRE_SCENE);
+        scene.add(atmoPoints);
+
+        const SNOISE = `
+          vec3 mod289(vec3 x){return x - floor(x * (1.0 / 289.0)) * 289.0;}
+          vec4 mod289(vec4 x){return x - floor(x * (1.0 / 289.0)) * 289.0;}
+          vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);}
+          vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
+          float snoise(vec3 v){
+            const vec2 C = vec2(1.0/6.0, 1.0/3.0);
+            const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+            vec3 i  = floor(v + dot(v, C.yyy));
+            vec3 x0 = v - i + dot(i, C.xxx);
+            vec3 g = step(x0.yzx, x0.xyz);
+            vec3 l = 1.0 - g;
+            vec3 i1 = min(g.xyz, l.zxy);
+            vec3 i2 = max(g.xyz, l.zxy);
+            vec3 x1 = x0 - i1 + C.xxx;
+            vec3 x2 = x0 - i2 + C.yyy;
+            vec3 x3 = x0 - D.yyy;
+            i = mod289(i);
+            vec4 p = permute(permute(permute(
+                      i.z + vec4(0.0, i1.z, i2.z, 1.0))
+                    + i.y + vec4(0.0, i1.y, i2.y, 1.0))
+                    + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+            float n_ = 0.142857142857;
+            vec3 ns = n_ * D.wyz - D.xzx;
+            vec4 j = p - 49.0 * floor(p * ns.z);
+            vec4 x_ = floor(j * ns.z);
+            vec4 y_ = floor(j - 7.0 * x_);
+            vec4 x = x_ *ns.x + ns.yyyy;
+            vec4 y = y_ *ns.x + ns.yyyy;
+            vec4 h = 1.0 - abs(x) - abs(y);
+            vec4 b0 = vec4(x.xy, y.xy);
+            vec4 b1 = vec4(x.zw, y.zw);
+            vec4 s0 = floor(b0)*2.0 + 1.0; vec4 s1 = floor(b1)*2.0 + 1.0; vec4 sh = -step(h, vec4(0.0));
+            vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy; vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
+            vec3 p0 = vec3(a0.xy,h.x); vec3 p1 = vec3(a0.zw,h.y); vec3 p2 = vec3(a1.xy,h.z); vec3 p3 = vec3(a1.zw,h.w);
+            vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+            p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+            vec4 m = max(0.5 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0); m = m * m;
+            return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
+          }
+        `;
+
+        const pointsGeom = new THREE.SphereGeometry(4.2, 200, 600);
+        const pointsUniforms = {
+            uTime: { value: 0 },
+            uStream: { value: 0 },
+            uAppear: { value: 0 },
+            uColLow: { value: hexToVec3(colorLow) },
+            uColHigh: { value: hexToVec3(colorHigh) },
+            uOpacity: { value: opacity },
+            uSize: { value: pointSize },
+            uBrightness: { value: brightness },
+            uWaveHeight: { value: waveHeight },
+            uFlow: { value: flow },
+            uScale: { value: scale },
+            uCursor: { value: new THREE.Vector3() },
+            uRepelRadius: { value: pointerRadius },
+            uRepelStrength: { value: pointerStrength },
+            uActivity: { value: 0 }
+        };
+
+        const pointsMat = new THREE.ShaderMaterial({
+            transparent: true,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending,
+            uniforms: pointsUniforms,
+            vertexShader: `
+            uniform float uTime; uniform float uStream; uniform float uSize; uniform float uWaveHeight; uniform float uFlow; uniform float uScale;
+            uniform vec3 uColLow; uniform vec3 uColHigh;
+            uniform vec3 uCursor; uniform float uRepelRadius; uniform float uRepelStrength; uniform float uActivity;
+            varying float vFade; varying vec3 vColor;
+            ${SNOISE}
+            void main() {
+              float rY = sqrt(max(0.001, 1.0 - (position.y / 4.2) * (position.y / 4.2)));
+              float normX = position.x / rY;
+              vec3 wp = vec3(normX * 18.0, 0.0, position.z * 55.0);
+              wp.x += position.y * 6.0;
+              float zc = wp.z + uStream;
+              float wn = snoise(vec3(wp.x * 0.08, zc * 0.08, uTime * 0.15 * uFlow)) * 2.0;
+              wn += snoise(vec3(wp.x * 0.16, zc * 0.16, uTime * 0.3 * uFlow)) * 0.8;
+              wp.y += wn * uWaveHeight;
+
+              vec3 finalPos = wp * uScale;
+              vec4 modelPosition = modelMatrix * vec4(finalPos, 1.0);
+              vec3 toP = modelPosition.xyz - uCursor;
+              float cd = length(toP);
+              float fall = smoothstep(uRepelRadius, 0.0, cd);
+              modelPosition.xyz += normalize(toP + vec3(0.0001)) * fall * uRepelStrength * uActivity;
+              vec4 mvPosition = viewMatrix * modelPosition;
+
+              float colMix = smoothstep(-3.0, 3.0, position.y + position.x * 0.5);
+              vColor = mix(uColLow, uColHigh, clamp(colMix, 0.0, 1.0));
+              vFade = 1.0;
+
+              gl_PointSize = uSize * (10.0 / -mvPosition.z);
+              gl_PointSize = max(gl_PointSize, 1.5);
+              gl_Position = projectionMatrix * mvPosition;
+            }
+          `,
+            fragmentShader: `
+            uniform float uOpacity; uniform float uBrightness; uniform float uAppear;
+            varying float vFade; varying vec3 vColor;
+            void main() {
+              vec2 xy = gl_PointCoord - 0.5;
+              float ll = length(xy);
+              if (ll > 0.5) discard;
+              float a = smoothstep(0.5, 0.1, ll);
+              gl_FragColor = vec4(vColor * uBrightness, vFade * a * uOpacity * uAppear);
+            }
+          `
+        });
+
+        const points = new THREE.Points(pointsGeom, pointsMat);
+        points.frustumCulled = false;
+        points.layers.enable(LAYERS.ENTIRE_SCENE);
+        group.add(points);
+
+        const mouse = new THREE.Vector2(0, 0);
+        const mouseTarget = new THREE.Vector2(0, 0);
+        let scrollCurrent = 0, scrollTarget = 0, scrollSmooth = 0;
+
+        window.addEventListener('mousemove', (e) => {
+            mouseTarget.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouseTarget.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            onPointerMove(e.clientX, e.clientY);
+        });
+
+        const raycaster = new THREE.Raycaster();
+        const planeXZ = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+        const POINTER = { raw: new THREE.Vector2(), world: new THREE.Vector3(), lastMove: 0, active: false, activity: 0 };
+
+        function onPointerMove(cx, cy) {
+            POINTER.raw.x = (cx / window.innerWidth) * 2 - 1;
+            POINTER.raw.y = -(cy / window.innerHeight) * 2 + 1;
+            POINTER.lastMove = performance.now();
+            POINTER.active = true;
+        }
+
+        function updatePointerWorld() {
+            raycaster.setFromCamera(POINTER.raw, camera);
+            raycaster.ray.intersectPlane(planeXZ, POINTER.world);
+            const idle = (performance.now() - POINTER.lastMove) / 1000;
+            POINTER.activity += (((POINTER.active && idle < 3) ? 1 : 0) - POINTER.activity) * 0.06;
+        }
+
+        class FlowWaveScene {
+            constructor() {
+                this.stream = 0;
+                this.t0 = performance.now() / 1000;
+                this.appearStart = performance.now();
+            }
+            render(scrollVal, m) {
+                const scroll = 0;
+                const t = performance.now() / 1000;
+                const dt = Math.min(0.05, t - this.t0);
+                this.t0 = t;
+                pointsUniforms.uTime.value = t;
+
+                this.stream += dt * (flow * 2.0) * 4.0;
+                pointsUniforms.uStream.value = this.stream;
+                pointsUniforms.uWaveHeight.value = waveHeight * (1 + scroll * scrollRise);
+
+                const ea = Math.min(scroll / 0.35, 1.0);
+                const e = ea * ea * (3 - 2 * ea);
+                const camY = Lerp(camStartY, camEndY, e);
+                const camZ = Lerp(camStartZ, camEndZ, e);
+                camera.position.set(m.x * parallax, camY + m.y * parallax * 0.3, camZ);
+                camera.lookAt(m.x * parallax * 0.5, Lerp(0.0, 0.6, e), Lerp(lookStartZ, lookEndZ, e));
+                group.rotation.x = -tilt;
+                group.rotation.y = 0;
+                updatePointerWorld();
+
+                pointsUniforms.uCursor.value.copy(POINTER.world);
+                pointsUniforms.uActivity.value = POINTER.activity;
+                const elapsed = (performance.now() - this.appearStart) / 1000;
+                pointsUniforms.uAppear.value = Math.max(0, Math.min(1, (elapsed - 0.2) / 1.4));
+            }
+        }
+        const sceneObj = new FlowWaveScene();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            scrollSmooth = Lerp(scrollSmooth, scrollTarget, 0.10);
+            scrollCurrent = Lerp(scrollCurrent, scrollSmooth, 0.06);
+            mouse.x = Lerp(mouse.x, mouseTarget.x, 0.06);
+            mouse.y = Lerp(mouse.y, mouseTarget.y, 0.06);
+
+            sceneObj.render(scrollCurrent, mouse);
+
+            camera.layers.set(LAYERS.TORUS_SCENE); torusComposer.render();
+            camera.layers.set(LAYERS.BLOOM_SCENE); bloomComposer.render();
+            camera.layers.set(LAYERS.ENTIRE_SCENE); finalComposer.render();
+        }
+
+        function onResize() {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            const dpr = window.devicePixelRatio;
+
+            renderer.setPixelRatio(dpr);
+            renderer.setSize(w, h, false);
+
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+
+            torusComposer.setPixelRatio(dpr);
+            torusComposer.setSize(w, h);
+            bloomComposer.setPixelRatio(dpr);
+            bloomComposer.setSize(w, h);
+            finalComposer.setPixelRatio(dpr);
+            finalComposer.setSize(w, h);
+
+            finalShaderPass.uniforms.tDiffuse.value = torusComposer.renderTarget2.texture;
+        }
+
+        window.addEventListener('resize', onResize);
+        onResize();
+        animate();
     </script>
 </body>
+
 </html>

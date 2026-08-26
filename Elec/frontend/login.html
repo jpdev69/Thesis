@@ -3,9 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - EnergyAI</title>
+    <title>Login - EnergyAI Forecasting Engine</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script type="importmap">
+        {
+          "imports": {
+            "three": "https://unpkg.com/three@0.143.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.143.0/examples/jsm/"
+          }
+        }
+    </script>
     <style>
+        :root {
+            --bg-dark: #02160c;
+            --card-bg: rgba(2, 22, 12, 0.38);
+            --card-border: rgba(52, 232, 154, 0.22);
+            --accent-primary: #10b981;
+            --accent-glow: rgba(16, 185, 129, 0.35);
+            --text-primary: #f8fafc;
+            --text-secondary: #aef0c0;
+            --text-muted: #64748b;
+            --input-bg: rgba(2, 30, 18, 0.45);
+            --input-border: rgba(52, 232, 154, 0.2);
+            --error-bg: rgba(239, 68, 68, 0.15);
+            --error-border: rgba(239, 68, 68, 0.4);
+            --error-text: #fca5a5;
+            --success-bg: rgba(16, 185, 129, 0.15);
+            --success-border: rgba(16, 185, 129, 0.4);
+            --success-text: #6ee7b7;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -14,44 +41,80 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            background-color: var(--bg-dark);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 24px;
+            color: var(--text-primary);
+            overflow-x: hidden;
         }
 
-        .login-container {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+        #scene {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            display: block;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .ambient-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: 0;
+            pointer-events: none;
+        }
+        .orb-1 { width: 300px; height: 300px; background: rgba(16, 185, 129, 0.2); top: -50px; left: -50px; }
+        .orb-2 { width: 350px; height: 350px; background: rgba(6, 182, 212, 0.15); bottom: -80px; right: -80px; }
+
+        .login-card {
+            position: relative;
+            z-index: 1;
+            background: var(--card-bg);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 30px rgba(16, 185, 129, 0.08);
             width: 100%;
-            max-width: 440px;
-            padding: 48px;
+            max-width: 450px;
+            padding: 40px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
-        .logo-section {
+        .logo-box {
             text-align: center;
-            margin-bottom: 32px;
+            margin-bottom: 28px;
         }
 
-        .logo-section svg {
-            width: 64px;
-            height: 64px;
+        .logo-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 68px;
+            height: 68px;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            box-shadow: 0 0 20px var(--accent-glow);
             margin-bottom: 16px;
         }
 
-        .logo-section h1 {
-            font-size: 28px;
+        .logo-box h1 {
+            font-size: 26px;
             font-weight: 700;
-            color: #111827;
-            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+            color: #ffffff;
+            margin-bottom: 6px;
         }
 
-        .logo-section p {
+        .logo-box p {
             font-size: 14px;
-            color: #6b7280;
+            color: var(--text-secondary);
         }
 
         .form-group {
@@ -60,247 +123,812 @@
 
         .form-group label {
             display: block;
-            font-size: 14px;
-            font-weight: 500;
-            color: #374151;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
             margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .form-group input {
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper svg {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            transition: color 0.2s ease;
+        }
+
+        .form-control {
             width: 100%;
-            padding: 12px 16px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
+            padding: 13px 16px 13px 44px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 12px;
             font-size: 14px;
-            font-family: 'Inter', sans-serif;
+            color: var(--text-primary);
+            font-family: inherit;
+            transition: all 0.25s ease;
         }
 
-        .form-group input:focus {
+        .form-control:focus {
             outline: none;
-            border-color: #10b981;
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+            background: rgba(30, 41, 59, 0.9);
         }
 
-        .btn-primary {
+        .form-control:focus + svg {
+            color: var(--accent-primary);
+        }
+
+        /* Bot Detection Honeypot (Hidden) */
+        .hp-trap {
+            opacity: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 0;
+            width: 0;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .btn-submit {
             width: 100%;
-            padding: 12px;
-            background: #10b981;
+            padding: 14px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
             border: none;
-            border-radius: 8px;
-            font-size: 14px;
+            border-radius: 12px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            font-family: 'Inter', sans-serif;
+            font-family: inherit;
+            box-shadow: 0 4px 14px var(--accent-glow);
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 8px;
         }
 
-        .btn-primary:hover {
-            background: #059669;
+        .btn-submit:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
         }
 
-        .toggle-form {
+        .form-toggle-bar {
             text-align: center;
             margin-top: 24px;
             font-size: 14px;
-            color: #6b7280;
+            color: var(--text-secondary);
         }
 
-        .toggle-form a {
-            color: #10b981;
+        .form-toggle-bar a {
+            color: var(--accent-primary);
             text-decoration: none;
             font-weight: 600;
+            transition: color 0.2s ease;
         }
 
-        .message {
-            padding: 12px;
-            border-radius: 8px;
+        .form-toggle-bar a:hover {
+            text-decoration: underline;
+        }
+
+        .admin-link-box {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid var(--card-border);
+            text-align: center;
+        }
+
+        .admin-link-box a {
+            color: #38bdf8;
+            font-size: 13px;
+            text-decoration: none;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .admin-link-box a:hover {
+            text-decoration: underline;
+        }
+
+        .alert-banner {
+            padding: 12px 16px;
+            border-radius: 12px;
             font-size: 13px;
             margin-bottom: 20px;
             display: none;
+            line-height: 1.5;
         }
 
-        .error {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            color: #dc2626;
+        .alert-banner.error {
+            background: var(--error-bg);
+            border: 1px solid var(--error-border);
+            color: var(--error-text);
         }
 
-        .success {
-            background: #ecfdf5;
-            border: 1px solid #a7f3d0;
-            color: #059669;
+        .alert-banner.success {
+            background: var(--success-bg);
+            border: 1px solid var(--success-border);
+            color: var(--success-text);
+        }
+
+        .alert-banner.warning {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            color: #fde047;
         }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="logo-section">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                    <linearGradient id="boltGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" style="stop-color:#86efac;stop-opacity:1" />
-                        <stop offset="50%" style="stop-color:#10b981;stop-opacity:1" />
-                        <stop offset="100%" style="stop-color:#047857;stop-opacity:1" />
-                    </linearGradient>
-                    <filter id="glow">
-                        <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                        <feMerge>
-                            <feMergeNode in="coloredBlur"/>
-                            <feMergeNode in="SourceGraphic"/>
-                        </feMerge>
-                    </filter>
-                </defs>
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" 
-                      fill="url(#boltGradient)" 
-                      stroke="#047857" 
-                      stroke-width="0.5"
-                      filter="url(#glow)"/>
-            </svg>
-            <h1>EnergyAI</h1>
-            <p>Smart Energy Forecasting Platform</p>
+    <canvas id="scene"></canvas>
+    <div class="ambient-orb orb-1"></div>
+    <div class="ambient-orb orb-2"></div>
+
+    <div class="login-card">
+        <div class="logo-box">
+            <div class="logo-icon">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="url(#boltGrad)" stroke="#10b981" stroke-width="0.5"/>
+                    <defs>
+                        <linearGradient id="boltGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#a7f3d0"/>
+                            <stop offset="50%" stop-color="#10b981"/>
+                            <stop offset="100%" stop-color="#047857"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+            <h1>EnergyAI Engine</h1>
+            <p id="subTitleText">Sign in to access your energy forecasting workspace</p>
         </div>
 
-        <div id="message" class="message"></div>
+        <div id="alertBanner" class="alert-banner"></div>
 
-        <!-- Login Form -->
+        <!-- Bot Detection Honeypot (Hidden) -->
+        <input type="text" name="website_hp" id="website_hp" class="hp-trap" tabindex="-1" autocomplete="off">
+
+        <!-- Sign In Form -->
         <form id="loginForm">
             <div class="form-group">
                 <label for="loginEmail">Email Address</label>
-                <input type="email" id="loginEmail" placeholder="Enter your email" required>
+                <div class="input-wrapper">
+                    <input type="email" id="loginEmail" class="form-control" placeholder="name@campus.edu" required autocomplete="email">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                </div>
             </div>
+
             <div class="form-group">
                 <label for="loginPassword">Password</label>
-                <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                <div class="input-wrapper">
+                    <input type="password" id="loginPassword" class="form-control" placeholder="••••••••••••" required autocomplete="current-password">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                </div>
             </div>
-            <button type="submit" class="btn-primary">Sign In</button>
-            <div class="toggle-form">
-                Don't have an account? <a href="#" onclick="toggleForm(); return false;">Sign Up</a>
+
+            <button type="submit" id="loginSubmitBtn" class="btn-submit">
+                <span>Sign In</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                    <polyline points="12 5 19 12 12 19"/>
+                </svg>
+            </button>
+
+            <div class="form-toggle-bar">
+                Don't have an account? <a href="#" onclick="switchForm('signup'); return false;">Request Account Access</a>
             </div>
-            <div class="toggle-form" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
-                <a href="admin.html" style="color: #059669;">🔒 Admin Login</a>
+            <div class="admin-link-box">
+                <a href="admin.html">System Administrator Portal →</a>
             </div>
         </form>
 
-        <!-- Signup Form -->
+        <!-- Sign Up Form -->
         <form id="signupForm" style="display: none;">
             <div class="form-group">
                 <label for="signupName">Full Name</label>
-                <input type="text" id="signupName" placeholder="Enter your full name" required>
+                <div class="input-wrapper">
+                    <input type="text" id="signupName" class="form-control" placeholder="Danielle Vince Fronda" required>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </div>
             </div>
+
             <div class="form-group">
                 <label for="signupEmail">Email Address</label>
-                <input type="email" id="signupEmail" placeholder="Enter your email" required>
+                <div class="input-wrapper">
+                    <input type="email" id="signupEmail" class="form-control" placeholder="user@campus.edu" required>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                </div>
             </div>
+
             <div class="form-group">
                 <label for="signupPassword">Password</label>
-                <input type="password" id="signupPassword" placeholder="Create a password (min 6 characters)" required minlength="6">
+                <div class="input-wrapper">
+                    <input type="password" id="signupPassword" class="form-control" placeholder="Min. 6 characters" required minlength="6">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                </div>
             </div>
-            <button type="submit" class="btn-primary">Create Account</button>
-            <div class="toggle-form">
-                Already have an account? <a href="#" onclick="toggleForm(); return false;">Sign In</a>
+
+            <button type="submit" id="signupSubmitBtn" class="btn-submit">
+                <span>Submit Account Registration</span>
+            </button>
+
+            <div class="form-toggle-bar">
+                Already have an approved account? <a href="#" onclick="switchForm('login'); return false;">Sign In</a>
             </div>
         </form>
     </div>
 
     <script>
-        function showMessage(text, type) {
-            const msg = document.getElementById('message');
-            msg.textContent = text;
-            msg.className = `message ${type}`;
-            msg.style.display = 'block';
+        function showAlert(msg, type = 'error') {
+            const banner = document.getElementById('alertBanner');
+            banner.textContent = msg;
+            banner.className = `alert-banner ${type}`;
+            banner.style.display = 'block';
         }
 
-        function toggleForm() {
+        function hideAlert() {
+            document.getElementById('alertBanner').style.display = 'none';
+        }
+
+        function switchForm(target) {
             const loginForm = document.getElementById('loginForm');
             const signupForm = document.getElementById('signupForm');
-            
-            if (loginForm.style.display === 'none') {
-                loginForm.style.display = 'block';
-                signupForm.style.display = 'none';
-            } else {
+            const title = document.getElementById('subTitleText');
+
+            hideAlert();
+
+            if (target === 'signup') {
                 loginForm.style.display = 'none';
                 signupForm.style.display = 'block';
+                title.textContent = 'Register an account for admin approval';
+            } else {
+                signupForm.style.display = 'none';
+                loginForm.style.display = 'block';
+                title.textContent = 'Sign in to access your energy forecasting workspace';
             }
-            
-            document.getElementById('message').style.display = 'none';
         }
 
-        // Handle signup
+        // ============================================================
+        // SIGNUP SUBMISSION
+        // ============================================================
         document.getElementById('signupForm').addEventListener('submit', (e) => {
             e.preventDefault();
-            
-            const name = document.getElementById('signupName').value;
-            const email = document.getElementById('signupEmail').value;
-            const password = document.getElementById('signupPassword').value;
-            
-            // Get existing users
-            const users = JSON.parse(localStorage.getItem('users') || '[]');
-            
-            // Check if user already exists
-            if (users.find(u => u.email === email)) {
-                showMessage('Email already registered', 'error');
+
+            // Honeypot Trap Check
+            if (document.getElementById('website_hp').value !== '') {
+                showAlert('Bot activity detected. Submission blocked.', 'error');
                 return;
             }
-            
-            // Add new user with pending status
+
+            const name = document.getElementById('signupName').value.trim();
+            const email = document.getElementById('signupEmail').value.trim().toLowerCase();
+            const password = document.getElementById('signupPassword').value;
+
+            // Retrieve registered users
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+
+            if (users.some(u => u.email.toLowerCase() === email)) {
+                showAlert('An account with this email already exists.', 'error');
+                return;
+            }
+
+            // Add new user in 'pending' status
             users.push({
+                id: 'USR-' + Math.floor(Math.random() * 89999 + 10000),
                 name: name,
                 email: email,
                 password: password,
                 status: 'pending',
                 created: new Date().toISOString()
             });
-            
+
             localStorage.setItem('users', JSON.stringify(users));
-            
-            showMessage('Account created! Waiting for admin approval.', 'success');
-            
-            // Clear form and switch to login
+
+            showAlert('Account registered successfully! Pending Administrator approval.', 'success');
             document.getElementById('signupForm').reset();
+
             setTimeout(() => {
-                toggleForm();
-            }, 2000);
+                switchForm('login');
+            }, 2500);
         });
 
-        // Handle login
+        // ============================================================
+        // LOGIN SUBMISSION
+        // ============================================================
         document.getElementById('loginForm').addEventListener('submit', (e) => {
             e.preventDefault();
-            
-            const email = document.getElementById('loginEmail').value;
+
+            // Honeypot Trap
+            if (document.getElementById('website_hp').value !== '') {
+                showAlert('Bot activity detected. Access denied.', 'error');
+                return;
+            }
+
+            const email = document.getElementById('loginEmail').value.trim().toLowerCase();
             const password = document.getElementById('loginPassword').value;
-            
-            // Get users
+
             const users = JSON.parse(localStorage.getItem('users') || '[]');
-            const user = users.find(u => u.email === email && u.password === password);
-            
+            const user = users.find(u => u.email.toLowerCase() === email && u.password === password);
+
             if (!user) {
-                showMessage('Invalid email or password', 'error');
+                showAlert('Invalid email or password.', 'error');
                 return;
             }
-            
+
+            // Check User Status
             if (user.status === 'pending') {
-                showMessage('Your account is pending admin approval', 'error');
+                showAlert('Your account is awaiting Administrator approval. Please check back later.', 'warning');
                 return;
             }
-            
+
             if (user.status === 'rejected') {
-                showMessage('Your account has been rejected', 'error');
+                showAlert('Access Denied. Your account registration was rejected by the Administrator.', 'error');
                 return;
             }
-            
-            // User is approved, login
+
+            // Successful Login
             localStorage.setItem('currentUser', JSON.stringify(user));
+            showAlert('Login successful! Redirecting to workspace...', 'success');
+
             const returnTo = localStorage.getItem('returnTo') || 'dashboard.html';
             localStorage.removeItem('returnTo');
-            window.location.href = returnTo;
+
+            setTimeout(() => {
+                window.location.href = returnTo;
+            }, 1000);
         });
 
-        // Check if already logged in
-        if (localStorage.getItem('currentUser')) {
-            const returnTo = localStorage.getItem('returnTo') || 'dashboard.html';
-            localStorage.removeItem('returnTo');
-            window.location.href = returnTo;
+        // Initialize default seed users if none exist
+        (function seedDefaultUsers() {
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            if (users.length === 0) {
+                localStorage.setItem('users', JSON.stringify([
+                    {
+                        id: 'USR-10001',
+                        name: 'Admin User',
+                        email: 'admin@energy.ai',
+                        password: 'admin123',
+                        status: 'approved',
+                        created: new Date().toISOString()
+                    },
+                    {
+                        id: 'USR-10002',
+                        name: 'Danielle Vince Fronda',
+                        email: 'danielle@campus.edu',
+                        password: 'password123',
+                        status: 'approved',
+                        created: new Date().toISOString()
+                    }
+                ]));
+            }
+        })();
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+        import { GammaCorrectionShader } from 'three/addons/shaders/GammaCorrectionShader.js';
+        import { CopyShader } from 'three/addons/shaders/CopyShader.js';
+
+        const bgColor       = '#02160c';
+        const flameColor    = '#0aff7f';
+        const flameColor2   = '#aef0c0';
+        const flameAmt      = 0.2;
+        const atmoColor     = '#7affbf';
+        const atmoCount     = 300;
+        const atmoSize      = 24;
+        const atmoSpeed     = 1.0;
+        const colorLow      = '#02160c';
+        const colorHigh     = '#34e89a';
+        const opacity       = 0.38;
+        const pointSize     = 5.5;
+        const brightness    = 0.6;
+        const waveHeight    = 3;
+        const flow          = 1;
+        const tilt          = 0;
+        const scale         = 0.275;
+        const scrollRise    = 1.0;
+        const camStartY     = 2.2, camStartZ = 8.0;
+        const camEndY       = 0.8, camEndZ  = -2;
+        const lookStartZ    = -8.0, lookEndZ = -16;
+        const parallax      = 1.2;
+        const pointerRadius   = 7.0;
+        const pointerStrength = 0.9;
+
+        const Lerp = (a, b, t) => a + (b - a) * t;
+        const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+        function hexToVec3(hex) {
+          const n = parseInt(hex.slice(1), 16);
+          return new THREE.Vector3(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
         }
+
+        const LAYERS = { NONE: 0, TORUS_SCENE: 1, BLOOM_SCENE: 2, ENTIRE_SCENE: 3 };
+
+        const canvas = document.querySelector('#scene');
+        const renderer = new THREE.WebGL1Renderer({ canvas, antialias: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.VSMShadowMap;
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+        scene.fog = new THREE.Fog(0x000000, 0, 15);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 400);
+        camera.position.set(0, camStartY, camStartZ);
+        camera.layers.enable(LAYERS.TORUS_SCENE);
+        camera.layers.enable(LAYERS.BLOOM_SCENE);
+        camera.layers.enable(LAYERS.ENTIRE_SCENE);
+        scene.add(camera);
+
+        const dummyTexture = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
+        dummyTexture.needsUpdate = true;
+
+        const FinalPassShader = {
+          uniforms: {
+            iTime: { value: 0 },
+            tDiffuse: { value: null },
+            torusTexture: { value: null },
+            bloomTexture: { value: null },
+            haloTexture: { value: dummyTexture },
+            uBg: { value: hexToVec3(bgColor) },
+            uFlameA: { value: hexToVec3(flameColor) },
+            uFlameB: { value: hexToVec3(flameColor2) },
+            uFlameAmt: { value: flameAmt }
+          },
+          vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position, 1.0); }`,
+          fragmentShader: `
+            uniform float iTime; uniform sampler2D tDiffuse; uniform sampler2D bloomTexture; uniform sampler2D torusTexture; uniform sampler2D haloTexture;
+            uniform vec3 uBg; uniform vec3 uFlameA; uniform vec3 uFlameB; uniform float uFlameAmt;
+            varying vec2 vUv;
+            vec3 warp3d(vec3 pos, float t){ float curv=.8,a=1.9,b=0.7; pos*=2.;
+              pos.x+=curv*sin(t+a*pos.y)+t*b; pos.y+=curv*cos(t+a*pos.x);
+              pos.y+=curv*sin(t+a*pos.z)+t*b; pos.z+=curv*cos(t+a*pos.y);
+              pos.z+=curv*sin(t+a*pos.x)+t*b; pos.x+=curv*cos(t+a*pos.z);
+              return 0.5+0.5*cos(pos.xyz+vec3(1,2,4)); }
+            void main(){
+              vec2 uv = 2.*vUv - 1.;
+              vec3 w = pow(warp3d(vec3(uv.x, sin(uv.y), uv.y), iTime*1.5), vec3(1.5));
+              vec3 flame = 1.5*uFlameA*w.x; flame*=w.y; flame += uFlameB*w.z;
+              flame *= smoothstep(0.25, 1., abs(uv.y));
+              float md = smoothstep(-0.7, 1., -uv.y*uv.x); flame *= md*md;
+              vec3 bg = uBg * (1.0 - 0.4 * length(uv));
+              vec3 halo = texture2D(haloTexture, vUv).xyz;
+              gl_FragColor = vec4(bg + flame*uFlameAmt + texture2D(bloomTexture, vUv).xyz + texture2D(torusTexture, vUv).xyz + texture2D(tDiffuse, vUv).xyz + halo, 1.);
+            }
+          `
+        };
+
+        const renderPass = new RenderPass(scene, camera);
+
+        const torusComposer = new EffectComposer(renderer);
+        torusComposer.renderToScreen = false;
+        torusComposer.addPass(renderPass);
+        torusComposer.addPass(new ShaderPass(GammaCorrectionShader));
+        torusComposer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.22, 0.2, 0));
+        torusComposer.addPass(new ShaderPass(CopyShader));
+
+        const bloomComposer = new EffectComposer(renderer);
+        bloomComposer.renderToScreen = false;
+        bloomComposer.addPass(renderPass);
+        bloomComposer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.4, 0.55, 0));
+        bloomComposer.addPass(new ShaderPass(GammaCorrectionShader));
+
+        const finalPass = new ShaderPass(FinalPassShader);
+        const finalComposer = new EffectComposer(renderer);
+        finalComposer.addPass(renderPass);
+        finalComposer.addPass(finalPass);
+
+        finalPass.uniforms.bloomTexture.value = bloomComposer.renderTarget1.texture;
+        finalPass.uniforms.torusTexture.value = torusComposer.renderTarget1.texture;
+
+        const SNOISE = `
+          vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}
+          vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
+          float snoise(vec3 v){
+            const vec2 C = vec2(1.0/6.0, 1.0/3.0); const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+            vec3 i = floor(v + dot(v, C.yyy)); vec3 x0 = v - i + dot(i, C.xxx);
+            vec3 g = step(x0.yzx, x0.xyz); vec3 l = 1.0 - g;
+            vec3 i1 = min(g.xyz, l.zxy); vec3 i2 = max(g.xyz, l.zxy);
+            vec3 x1 = x0 - i1 + 1.0 * C.xxx; vec3 x2 = x0 - i2 + 2.0 * C.xxx; vec3 x3 = x0 - 1.0 + 3.0 * C.xxx;
+            i = mod(i, 289.0);
+            vec4 p = permute(permute(permute(i.z + vec4(0.0, i1.z, i2.z, 1.0)) + i.y + vec4(0.0, i1.y, i2.y, 1.0)) + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+            float n_ = 1.0/7.0; vec3 ns = n_ * D.wyz - D.xzx;
+            vec4 j = p - 49.0 * floor(p * ns.z *ns.z);
+            vec4 x_ = floor(j * ns.z); vec4 y_ = floor(j - 7.0 * x_);
+            vec4 x = x_ *ns.x + ns.yyyy; vec4 y = y_ *ns.x + ns.yyyy; vec4 h = 1.0 - abs(x) - abs(y);
+            vec4 b0 = vec4(x.xy, y.xy); vec4 b1 = vec4(x.zw, y.zw);
+            vec4 s0 = floor(b0)*2.0 + 1.0; vec4 s1 = floor(b1)*2.0 + 1.0; vec4 sh = -step(h, vec4(0.0));
+            vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy; vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
+            vec3 p0 = vec3(a0.xy,h.x); vec3 p1 = vec3(a0.zw,h.y); vec3 p2 = vec3(a1.xy,h.z); vec3 p3 = vec3(a1.zw,h.w);
+            vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+            p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+            vec4 m = max(0.5 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0); m = m * m;
+            return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
+          }
+        `;
+
+        const pointsGeom = new THREE.SphereGeometry(4.2, 200, 600);
+        const pointsUniforms = {
+          uTime: { value: 0 },
+          uStream: { value: 0 },
+          uAppear: { value: 0 },
+          uColLow: { value: hexToVec3(colorLow) },
+          uColHigh: { value: hexToVec3(colorHigh) },
+          uOpacity: { value: opacity },
+          uSize: { value: pointSize },
+          uBrightness: { value: brightness },
+          uWaveHeight: { value: waveHeight },
+          uFlow: { value: flow },
+          uScale: { value: scale },
+          uCursor: { value: new THREE.Vector3() },
+          uRepelRadius: { value: pointerRadius },
+          uRepelStrength: { value: pointerStrength },
+          uActivity: { value: 0 }
+        };
+
+        const pointsMat = new THREE.ShaderMaterial({
+          transparent: true,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+          uniforms: pointsUniforms,
+          vertexShader: `
+            uniform float uTime; uniform float uStream; uniform float uSize; uniform float uWaveHeight; uniform float uFlow; uniform float uScale;
+            uniform vec3 uColLow; uniform vec3 uColHigh;
+            uniform vec3 uCursor; uniform float uRepelRadius; uniform float uRepelStrength; uniform float uActivity;
+            varying float vFade; varying vec3 vColor;
+            ${SNOISE}
+            void main() {
+              float rY = sqrt(max(0.001, 1.0 - (position.y / 4.2) * (position.y / 4.2)));
+              float normX = position.x / rY;
+              vec3 wp = vec3(normX * 18.0, 0.0, position.z * 55.0);
+              wp.x += position.y * 6.0;
+              float zc = wp.z + uStream;
+              float wn = snoise(vec3(wp.x * 0.08, zc * 0.08, uTime * 0.15 * uFlow)) * 2.0;
+              wn += snoise(vec3(wp.x * 0.16, zc * 0.16, uTime * 0.3 * uFlow)) * 0.8;
+              wp.y += wn * uWaveHeight;
+
+              vec3 finalPos = wp * uScale;
+              vec4 modelPosition = modelMatrix * vec4(finalPos, 1.0);
+              vec3 toP = modelPosition.xyz - uCursor;
+              float cd = length(toP);
+              float fall = smoothstep(uRepelRadius, 0.0, cd);
+              modelPosition.xyz += normalize(toP + vec3(0.0001)) * fall * uRepelStrength * uActivity;
+              vec4 mvPosition = viewMatrix * modelPosition;
+
+              float colMix = smoothstep(-3.0, 3.0, position.y + position.x * 0.5);
+              vColor = mix(uColLow, uColHigh, clamp(colMix, 0.0, 1.0));
+              vFade = 1.0;
+
+              gl_PointSize = uSize * (10.0 / -mvPosition.z);
+              gl_PointSize = max(gl_PointSize, 1.5);
+              gl_Position = projectionMatrix * mvPosition;
+            }
+          `,
+          fragmentShader: `
+            uniform float uOpacity; uniform float uBrightness; uniform float uAppear;
+            varying float vFade; varying vec3 vColor;
+            void main() {
+              vec2 xy = gl_PointCoord - 0.5;
+              float ll = length(xy);
+              if (ll > 0.5) discard;
+              float a = smoothstep(0.5, 0.1, ll);
+              gl_FragColor = vec4(vColor * uBrightness, vFade * a * uOpacity * uAppear);
+            }
+          `
+        });
+
+        const points = new THREE.Points(pointsGeom, pointsMat);
+        points.frustumCulled = false;
+        points.layers.enable(LAYERS.ENTIRE_SCENE);
+
+        const group = new THREE.Group();
+        group.add(points);
+        scene.add(group);
+
+        let atmoMat;
+        (() => {
+          const count = Math.round(atmoCount);
+          const positions = new Float32Array(count * 3);
+          const sizes = new Float32Array(count);
+          const seeds = new Float32Array(count);
+
+          for (let i = 0; i < count; i++) {
+            positions[i * 3]     = 2 * Math.random() - 1;
+            positions[i * 3 + 1] = 2 * Math.random() - 1;
+            positions[i * 3 + 2] = 2 * Math.random() - 1;
+            sizes[i] = atmoSize * (0.4 + Math.random());
+            seeds[i] = Math.random();
+          }
+
+          const atmoGeom = new THREE.BufferGeometry();
+          atmoGeom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+          atmoGeom.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+          atmoGeom.setAttribute('seed', new THREE.BufferAttribute(seeds, 1));
+
+          atmoMat = new THREE.ShaderMaterial({
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            depthTest: false,
+            uniforms: {
+              uTime: { value: 0 },
+              uColor: { value: hexToVec3(atmoColor) },
+              uRes: { value: new THREE.Vector2(window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio) }
+            },
+            vertexShader: `
+              attribute float size; attribute float seed; uniform float uTime; uniform vec2 uRes;
+              varying float vA;
+              vec3 warp(vec3 p, float t){ float c=0.9,a=1.9,b=0.02,s=0.05; p*=2.;
+                p.x+=c*sin(s*t+a*p.y)+t*b; p.y+=c*cos(s*t+a*p.x); p.y+=c*sin(s*t+a*p.z)+t*b;
+                p.z+=c*cos(s*t+a*p.y); p.z+=c*sin(s*t+a*p.x)+t*b; p.x+=c*cos(s*t+a*p.z);
+                return cos(p+vec3(1,2,4)); }
+              void main(){
+                vec3 v = position*4.0 + warp(position, uTime)*1.2;
+                vec4 mv = modelViewMatrix * vec4(v, 1.0);
+                float r = length(v); float farF = 1.0 - smoothstep(5.0, 6.5, r); float nearF = smoothstep(0.0, 0.5, -mv.z);
+                vA = farF * nearF;
+                gl_PointSize = size * uRes.y / 900.0 / -mv.z; gl_PointSize = max(gl_PointSize, 1.0);
+                gl_Position = projectionMatrix * mv;
+              }
+            `,
+            fragmentShader: `
+              uniform vec3 uColor; varying float vA;
+              void main(){ vec2 p = gl_PointCoord - 0.5; float l = length(p); if (l > 0.5) discard;
+                float tex = smoothstep(0.5, 0.0, l); gl_FragColor = vec4(uColor * tex, tex * vA * 0.6); }
+            `
+          });
+
+          const atmoPts = new THREE.Points(atmoGeom, atmoMat);
+          atmoPts.frustumCulled = false;
+          atmoPts.layers.enable(LAYERS.ENTIRE_SCENE);
+          scene.add(atmoPts);
+
+          atmoPts.onBeforeRender = () => {
+            const t = performance.now() / 1000;
+            atmoMat.uniforms.uTime.value = t * atmoSpeed * 8.0;
+            atmoPts.position.copy(camera.position);
+            finalPass.uniforms.iTime.value = t;
+          };
+        })();
+
+        let scrollTarget = 0, scrollSmooth = 0, scrollCurrent = 0;
+
+        const mouseTarget = { x: 0, y: 0 };
+        const mouse = { x: 0, y: 0 };
+        const POINTER = { world: new THREE.Vector3(), activity: 0, active: false, lastMove: performance.now() };
+
+        window.addEventListener('mousemove', (e) => {
+          mouseTarget.x = (e.clientX / window.innerWidth) * 2 - 1;
+          mouseTarget.y = -(e.clientY / window.innerHeight) * 2 + 1;
+          POINTER.active = true;
+          POINTER.lastMove = performance.now();
+        }, { passive: true });
+
+        window.addEventListener('mouseout', () => { POINTER.active = false; });
+
+        const _ndc = new THREE.Vector3(), _dir = new THREE.Vector3(), _tgt = new THREE.Vector3();
+        function updatePointerWorld() {
+          _tgt.set(0, 0, 0);
+          if (POINTER.active) {
+            _ndc.set(mouse.x, mouse.y, 0.5).unproject(camera);
+            _dir.copy(_ndc).sub(camera.position).normalize();
+            const dn = _dir.z;
+            if (Math.abs(dn) > 1e-4) {
+              const tt = -camera.position.z / dn;
+              if (tt > 0 && Number.isFinite(tt)) _tgt.copy(camera.position).addScaledVector(_dir, tt);
+            }
+          }
+          POINTER.world.lerp(_tgt, 0.12);
+          const idle = (performance.now() - POINTER.lastMove) / 1000;
+          POINTER.activity += (((POINTER.active && idle < 3) ? 1 : 0) - POINTER.activity) * 0.06;
+        }
+
+        class FlowWaveScene {
+          constructor() {
+            this.stream = 0;
+            this.t0 = performance.now() / 1000;
+            this.appearStart = performance.now();
+          }
+          render(scrollVal, m) {
+            const scroll = 0;
+            const t = performance.now() / 1000;
+            const dt = Math.min(0.05, t - this.t0);
+            this.t0 = t;
+            pointsUniforms.uTime.value = t;
+
+            this.stream += dt * (flow * 2.0) * 4.0;
+            pointsUniforms.uStream.value = this.stream;
+            pointsUniforms.uWaveHeight.value = waveHeight * (1 + scroll * scrollRise);
+
+            const ea = Math.min(scroll / 0.35, 1.0);
+            const e = ea * ea * (3 - 2 * ea);
+            const camY = Lerp(camStartY, camEndY, e);
+            const camZ = Lerp(camStartZ, camEndZ, e);
+            camera.position.set(m.x * parallax, camY + m.y * parallax * 0.3, camZ);
+            camera.lookAt(m.x * parallax * 0.5, Lerp(0.0, 0.6, e), Lerp(lookStartZ, lookEndZ, e));
+            group.rotation.x = -tilt;
+            group.rotation.y = 0;
+            updatePointerWorld();
+
+            pointsUniforms.uCursor.value.copy(POINTER.world);
+            pointsUniforms.uActivity.value = POINTER.activity;
+            const elapsed = (performance.now() - this.appearStart) / 1000;
+            pointsUniforms.uAppear.value = Math.max(0, Math.min(1, (elapsed - 0.2) / 1.4));
+          }
+        }
+        const sceneObj = new FlowWaveScene();
+
+        function animate() {
+          requestAnimationFrame(animate);
+
+          scrollSmooth  = Lerp(scrollSmooth, scrollTarget, 0.10);
+          scrollCurrent = Lerp(scrollCurrent, scrollSmooth, 0.06);
+          mouse.x = Lerp(mouse.x, mouseTarget.x, 0.06);
+          mouse.y = Lerp(mouse.y, mouseTarget.y, 0.06);
+
+          sceneObj.render(scrollCurrent, mouse);
+
+          camera.layers.set(LAYERS.TORUS_SCENE);  torusComposer.render();
+          camera.layers.set(LAYERS.BLOOM_SCENE);  bloomComposer.render();
+          camera.layers.set(LAYERS.ENTIRE_SCENE); finalComposer.render();
+        }
+
+        function onResize() {
+          const w = window.innerWidth;
+          const h = window.innerHeight;
+          const dpr = window.devicePixelRatio;
+
+          renderer.setPixelRatio(dpr);
+          renderer.setSize(w, h, false);
+
+          camera.aspect = w / h;
+          camera.updateProjectionMatrix();
+
+          torusComposer.setPixelRatio(dpr);
+          torusComposer.setSize(w, h);
+          bloomComposer.setPixelRatio(dpr);
+          bloomComposer.setSize(w, h);
+          finalComposer.setPixelRatio(dpr);
+          finalComposer.setSize(w, h);
+
+          if (atmoMat) {
+            atmoMat.uniforms.uRes.value.set(w * dpr, h * dpr);
+          }
+        }
+
+        window.addEventListener('resize', onResize);
+        onResize();
+        animate();
     </script>
 </body>
 </html>

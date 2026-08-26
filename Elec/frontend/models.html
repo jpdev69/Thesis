@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <title>Models - EnergyAI</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="dashboard.css?v=3">
 </head>
 <body>
     <aside class="sidebar">
@@ -35,6 +35,15 @@
                           filter="url(#glow)"/>
                 </svg>
                 <span>EnergyAI</span>
+            </div>
+            <div class="sidebar-controls">
+                <button class="sidebar-control-btn" onclick="toggleSidebar()" title="Toggle sidebar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="6" x2="21" y2="6"/>
+                        <line x1="3" y1="12" x2="21" y2="12"/>
+                        <line x1="3" y1="18" x2="21" y2="18"/>
+                    </svg>
+                </button>
             </div>
         </div>
         <nav class="sidebar-nav">
@@ -102,12 +111,12 @@
                         <input type="file" id="modelCsvFileInput" accept=".csv" style="display:none">
                     </div>
                     <div class="csv-file-info" id="modelFileInfo" style="display:none">
-                        <span>📄 <strong id="modelFileName"></strong></span>
+                        <span><strong id="modelFileName"></strong></span>
                         <button class="btn-text-small" onclick="document.getElementById('modelFileInfo').style.display='none'">✕</button>
                     </div>
                     <div class="form-group">
                         <label>Historical daily data (CSV format)</label>
-                        <textarea id="modelTrainingDataInput" rows="6" placeholder="Date,Consumption,Temperature,Humidity,Rainfall,HasClasses&#10;2024-09-01,1450,28.5,72,0,1&#10;2024-09-02,1520,29.2,68,0,1"></textarea>
+                        <textarea id="modelTrainingDataInput" rows="6" placeholder="Date,Consumption,Temperature,Humidity,Rainfall,HasClasses&#10;2026-07-01,1450,28.5,72,0,1&#10;2026-07-02,1520,29.2,68,0,1"></textarea>
                     </div>
                     <div class="button-group">
                         <button onclick="generateModelSampleData()" class="btn-secondary">Generate Sample</button>
@@ -244,21 +253,11 @@
         </div>
     </main>
 
-    <script src="auth.js?v=20260704"></script>
+    <script src="auth.js?v=20260805c"></script>
     <script src="dashboard-fixed.js?v=20260704"></script>
     <script>
         function generateModelSampleData() {
-            const sampleData = `Date,Consumption,Temperature,Humidity,Rainfall,HasClasses
-2024-09-01,1450,28.5,72,0,1
-2024-09-02,1520,29.2,68,0,1
-2024-09-03,1480,27.8,75,5.2,1
-2024-09-04,1510,28.9,70,0,1
-2024-09-05,1490,28.3,73,0,1
-2024-09-06,1150,26.5,78,12.5,0
-2024-09-07,1100,25.8,80,8.3,0
-2024-09-08,1460,28.1,71,0,1
-2024-09-09,1530,29.5,67,0,1
-2024-09-10,1470,28.4,74,3.1,1`;
+            const sampleData = generateDynamicSampleCSV(30);
             document.getElementById('modelTrainingDataInput').value = sampleData;
         }
 

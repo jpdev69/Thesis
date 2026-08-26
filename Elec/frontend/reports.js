@@ -364,15 +364,15 @@ function toggleTheme() {
 }
 
 function loadTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'light';
+    const savedTheme = localStorage.getItem('theme') || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
     
     const sunIcon = document.getElementById('sunIcon');
     const moonIcon = document.getElementById('moonIcon');
     
-    if (savedTheme === 'dark') {
-        sunIcon.style.display = 'none';
-        moonIcon.style.display = 'block';
+    if (sunIcon && moonIcon) {
+        sunIcon.style.display = savedTheme === 'dark' ? 'none' : 'block';
+        moonIcon.style.display = savedTheme === 'dark' ? 'block' : 'none';
     }
 }
 
