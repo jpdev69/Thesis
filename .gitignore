@@ -8,3 +8,12 @@ env/
 venv/
 *.log
 .DS_Store
+
+# Confidential electricity billing files and results
+Elec/data/processed/
+
+# Private thesis notes/reports (do not publish)
+Elec/docs/
+
+# Ignore Elec source folder for this commit scope
+Elec/src/
