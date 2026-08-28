@@ -11,6 +11,8 @@ venv/
 
 # Confidential electricity billing files and results
 Elec/data/processed/
+Elec/data/daily_canonical_dataset.csv
+Elec/data/external/
 
 # Private thesis notes/reports (do not publish)
 Elec/docs/

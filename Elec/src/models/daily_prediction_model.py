@@ -406,9 +406,6 @@ class DailyEnergyPredictor:
             keras.callbacks.EarlyStopping(
                 patience=15, restore_best_weights=True, monitor='val_loss'
             ),
-            keras.callbacks.ReduceLROnPlateau(
-                factor=0.5, patience=7, monitor='val_loss', min_lr=1e-7
-            ),
             keras.callbacks.TerminateOnNaN()
         ] if HAS_TF else None
         
@@ -467,13 +464,13 @@ class DailyEnergyPredictor:
         print(f"  RMSE: {rmse:.2f}")
         print(f"  MAE: {mae:.2f}")
         print(f"  MAPE: {mape:.2f}%")
-        print(f"  R²: {r2:.4f}")
+        print(f"  R2: {r2:.4f}")
         print(f"  Directional Accuracy: {directional_acc:.1f}%")
         
         # Detect anomalies in historical data
         anomalies = self.detect_anomalies(consumption, dates)
         if anomalies:
-            print(f"\n⚠ Detected {len(anomalies)} anomalous day(s) in historical data")
+            print(f"\n[!] Detected {len(anomalies)} anomalous day(s) in historical data")
         
         self.validation_metrics = {
             'RMSE': float(rmse),
@@ -516,7 +513,10 @@ class DailyEnergyPredictor:
         # MC Dropout predictions through Integrated Hybrid architecture
         all_preds = []
         for _ in range(n_forward):
-            lstm_pred = self.lstm_model.model(X, training=True).numpy().flatten()
+            if HAS_TF:
+                lstm_pred = self.lstm_model(X, training=True).numpy().flatten()
+            else:
+                lstm_pred = self.lstm_model.model(X, training=True).numpy().flatten()
             X_flat = X.reshape(X.shape[0], -1)
             X_svm = np.column_stack([X_flat, lstm_pred])
             hybrid_pred = self.svm_model.predict(X_svm)
