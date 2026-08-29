@@ -13,9 +13,16 @@ venv/
 Elec/data/processed/
 Elec/data/daily_canonical_dataset.csv
 Elec/data/external/
+Elec/data/daily_ops_dataset.csv
 
 # Private thesis notes/reports (do not publish)
 Elec/docs/
 
 # Ignore Elec source folder for this commit scope
 Elec/src/
+
+# Trained operational model artifacts
+Elec/models/
+
+# Ignore the electricity monitoring data file
+ISUE_ISELCO_Monitoring.xlsx
