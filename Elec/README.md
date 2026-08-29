@@ -44,6 +44,35 @@ The documentation here is intentionally minimal and objective-driven.
 - `ARCHITECTURE.md` - implementation architecture outline.
 - `THESIS_OBJECTIVE_OUTLINE.md` - final objective-to-evidence checklist.
 
+## Daily Operations (Continuous Learning)
+
+Run once per day (the single operational entry point). See
+`docs/DAILY_UPDATE_GUIDE.md` for the full clarifications: trigger
+semantics, retrain rules, artifacts, and verified behavior.
+
+    python examples/daily_update.py [--xlsx path\to\ISUE_ISELCO_Monitoring.xlsx]
+
+What it does:
+
+1. Bill anchoring: re-reads the ISELCO billing workbook (per-building
+   monthly bills) when its content changed and re-runs the preprocessing
+   pipeline, anchoring the completed month's daily values.
+2. Weather update: fetches new observed days from the Open-Meteo ERA5
+   archive (Echague, Isabela), with automatic forecast-API fallback for
+   days the archive has not published yet.
+3. Dataset rebuild: `data/daily_canonical_dataset.csv` (anchored days
+   only, thesis-grade) and `data/daily_ops_dataset.csv` (anchored +
+   provisional current-month days, `IsDisaggregated=0`).
+4. Retraining: retrains the hybrid LSTM-SVM on anchored days only when
+   the anchored bills changed (`--retrain auto|always|never`).
+5. Forecast: 7-day recursive forecast using the live Open-Meteo weather
+   forecast, with cost translation, anomaly flags, and peak analysis.
+
+Outputs: `models/ops/daily/` (operational model), `models/ops/state.json`
+(run state), `data/processed/ops/latest_forecast.json`,
+`data/processed/ops/forecast_<date>.csv`, and
+`data/processed/ops/update_log.jsonl` (run history).
+
 ## Minimal Thesis Validation Workflow
 
 1. Install dependencies:

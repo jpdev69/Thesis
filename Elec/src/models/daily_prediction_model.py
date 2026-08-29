@@ -649,7 +649,15 @@ class DailyEnergyPredictor:
         """Save complete model state."""
         os.makedirs(directory, exist_ok=True)
         if self.lstm_model is not None:
-            self.lstm_model.save(os.path.join(directory, 'daily_lstm'))
+            if HAS_TF:
+                # Keras 3 requires a .keras filepath; older TF accepts
+                # SavedModel directories. Try both for compatibility.
+                try:
+                    self.lstm_model.save(os.path.join(directory, 'daily_lstm.keras'))
+                except ValueError:
+                    self.lstm_model.save(os.path.join(directory, 'daily_lstm'))
+            else:
+                joblib.dump(self.lstm_model, os.path.join(directory, 'daily_lstm.joblib'))
         if self.svm_model is not None:
             joblib.dump(self.svm_model, os.path.join(directory, 'daily_svm.joblib'))
         joblib.dump({
@@ -670,7 +678,17 @@ class DailyEnergyPredictor:
     
     def load(self, directory):
         """Load complete model state."""
-        self.lstm_model = keras.models.load_model(os.path.join(directory, 'daily_lstm'))
+        keras_path = os.path.join(directory, 'daily_lstm.keras')
+        savedmodel_dir = os.path.join(directory, 'daily_lstm')
+        joblib_path = os.path.join(directory, 'daily_lstm.joblib')
+        if os.path.exists(keras_path):
+            self.lstm_model = keras.models.load_model(keras_path)
+        elif os.path.exists(savedmodel_dir):
+            self.lstm_model = keras.models.load_model(savedmodel_dir)
+        elif os.path.exists(joblib_path):
+            self.lstm_model = joblib.load(joblib_path)
+        else:
+            raise FileNotFoundError(f"No LSTM artifacts found in {directory}")
         self.svm_model = joblib.load(os.path.join(directory, 'daily_svm.joblib'))
         meta = joblib.load(os.path.join(directory, 'daily_meta.joblib'))
         self.consumption_scaler = meta['consumption_scaler']

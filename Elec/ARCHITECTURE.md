@@ -67,3 +67,14 @@ Implementation:
 
 Implementation:
 - `backend/daily_api.py`
+
+## 8) Daily Operational Loop (Continuous Learning)
+
+- `examples/daily_update.py` is the single daily entry point:
+  weather ingestion (Open-Meteo), monthly bill re-anchoring
+  (ISELCO workbook -> monthly totals -> daily re-disaggregation),
+  dataset rebuild (anchored canonical + provisional ops series),
+  auto-retraining on anchored-bill changes (expanding window), and
+  live 7-day recursive forecasting with cost translation.
+- Operational model and run state: `models/ops/`.
+- Forecast and run-history artifacts: `data/processed/ops/`.
