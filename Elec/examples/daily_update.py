@@ -44,9 +44,6 @@ import argparse
 import hashlib
 import json
 import sys
-import time
-import urllib.parse
-import urllib.request
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
@@ -69,14 +66,13 @@ from src.data.build_daily_canonical import (
     write_qa_report,
 )
 from src.data.preprocess_iselco_dataset import _render_report, run_pipeline
+from src.data.weather_client import (
+    fetch_archive_range,
+    fetch_forecast_blend,
+    parse_daily,
+)
 from src.models.daily_prediction_model import DailyEnergyPredictor, HAS_TF
 
-LAT = 16.695957
-LON = 121.7192
-TIMEZONE = "Asia/Manila"
-WEATHER_VARS = "temperature_2m_mean,relative_humidity_2m_mean,rain_sum"
-ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/era5"
-FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 COST_PER_KWH = 12.383
 PROVISIONAL_SOURCE = "provisional_unanchored"
 RECENT_MONTHS_FOR_SCALE = 6
@@ -134,58 +130,8 @@ def _append_log(entry: dict) -> None:
 
 
 # ----------------------------------------------------------------------------
-# Open-Meteo fetching
+# Open-Meteo fetching (shared client: src/data/weather_client.py)
 # ----------------------------------------------------------------------------
-
-def _fetch_json(url: str, retries: int = 3, backoff: float = 5.0) -> dict:
-    last_err = None
-    for attempt in range(1, retries + 1):
-        try:
-            req = urllib.request.Request(
-                url, headers={"User-Agent": "EnergyAI-thesis-daily-update/1.0"}
-            )
-            with urllib.request.urlopen(req, timeout=60) as resp:
-                return json.loads(resp.read().decode("utf-8"))
-        except Exception as e:
-            last_err = e
-            if attempt < retries:
-                print(f"  [!] Fetch attempt {attempt}/{retries} failed ({e}); retrying...")
-                time.sleep(backoff)
-    raise last_err
-
-
-def _parse_daily(payload: dict) -> dict:
-    """Return {date_str: [temperature, humidity, rainfall]} (None if missing)."""
-    daily = payload.get("daily") or {}
-    times = daily.get("time") or []
-    out = {}
-    for i, t in enumerate(times):
-        vals = []
-        for var in ("temperature_2m_mean", "relative_humidity_2m_mean", "rain_sum"):
-            arr = daily.get(var) or []
-            vals.append(arr[i] if i < len(arr) else None)
-        out[t] = vals
-    return out
-
-
-def fetch_archive_range(start: str, end: str) -> dict:
-    url = (
-        f"{ARCHIVE_URL}?latitude={LAT}&longitude={LON}"
-        f"&start_date={start}&end_date={end}"
-        f"&daily={WEATHER_VARS}&timezone={urllib.parse.quote(TIMEZONE)}"
-    )
-    return _parse_daily(_fetch_json(url))
-
-
-def fetch_forecast_blend(past_days: int, forecast_days: int) -> dict:
-    """One call returning recent actual days plus the forecast horizon."""
-    url = (
-        f"{FORECAST_URL}?latitude={LAT}&longitude={LON}"
-        f"&daily={WEATHER_VARS}&past_days={past_days}&forecast_days={forecast_days}"
-        f"&timezone={urllib.parse.quote(TIMEZONE)}"
-    )
-    return _parse_daily(_fetch_json(url))
-
 
 def update_weather_store(store_path: Path, target_date: date, max_backfill: int) -> dict:
     """Merge newly observed days (through target_date) into the weather store.
@@ -540,7 +486,9 @@ def generate_forecast(
     weather_source = "open_meteo_forecast"
     blend = {}
     try:
-        blend = fetch_forecast_blend(past_days=7, forecast_days=max(n_days, 7) + 1)
+        # Open-Meteo serves at most 16 forecast days; longer horizons
+        # are filled with persistence values per-day below.
+        blend = fetch_forecast_blend(past_days=7, forecast_days=min(max(n_days, 7) + 1, 16))
     except Exception as e:
         print(f"  [!] Weather forecast fetch failed ({e}); using persistence")
         weather_source = "persistence_fallback"
@@ -618,6 +566,8 @@ def generate_forecast(
         "cost_php": [float(v) for v in costs],
         "has_classes": [int(v) for v in future_schedule["has_classes"]],
         "temperature": [float(v) for v in temps],
+        "humidity": [float(v) for v in hums],
+        "rainfall": [float(v) for v in rains],
         "anomaly_flags": flags,
         "peak_analysis": {k: (float(v) if isinstance(v, (int, float)) else v) for k, v in peak.items()},
         "total_consumption_kwh": float(preds.sum()),
@@ -637,6 +587,8 @@ def generate_forecast(
             "CostPHP": np.round(costs, 2),
             "HasClasses": payload["has_classes"],
             "Temperature": np.round(temps, 1),
+            "Humidity": np.round(hums, 1),
+            "Rainfall": np.round(rains, 1),
         }
     )
     csv_path = OPS_OUT / f"forecast_{fc_dates[0].date():%Y%m%d}.csv"
