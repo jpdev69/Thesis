@@ -73,6 +73,26 @@ Outputs: `models/ops/daily/` (operational model), `models/ops/state.json`
 `data/processed/ops/forecast_<date>.csv`, and
 `data/processed/ops/update_log.jsonl` (run history).
 
+## Web Integration
+
+`backend/daily_api.py` auto-loads the operational model
+(`models/ops/daily/`) on startup, so the web application serves the
+continuously-retrained hybrid LSTM-SVM:
+
+- Dashboard forecast button calls `GET /ops/forecast` (the real hybrid
+  model); it falls back to a client-side demo model only when the API
+  is offline.
+- `/metrics` returns the real anchored training snapshot, so the
+  models.html comparison matrix (hybrid vs linear / persistence /
+  mean / ARIMA) is computed on real data with real ARIMA via
+  `/benchmark-arima`.
+- `/baseline-comparison` still works without an in-memory training run
+  (live evaluation of the ops model vs ARIMA on the current anchored
+  window).
+
+Start the backend with `python backend/daily_api.py`, then open the
+frontend pages.
+
 ## Minimal Thesis Validation Workflow
 
 1. Install dependencies:

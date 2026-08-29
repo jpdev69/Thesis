@@ -8,6 +8,12 @@ FastAPI backend for hybrid forecasting and ARIMA baseline benchmarking.
 - Start command:
   - `python daily_api.py`
 
+## Operational Integration
+
+On startup the API auto-loads the operational model trained by
+`examples/daily_update.py` (`models/ops/daily/`), so all endpoints serve
+the continuously-retrained hybrid LSTM-SVM without in-browser retraining.
+
 ## Thesis Endpoints
 
 - `POST /train-daily`
@@ -23,7 +29,14 @@ FastAPI backend for hybrid forecasting and ARIMA baseline benchmarking.
   - Runs ARIMA holdout benchmark from consumption-only series.
 
 - `GET /baseline-comparison`
-  - Returns latest hybrid-vs-ARIMA comparison generated at training time.
+  - Returns latest hybrid-vs-ARIMA comparison (in-memory training run, or
+    live evaluation of the operational model on the current anchored data).
+
+- `GET /ops/forecast?days=N&refresh=true`
+  - Latest operational forecast from the daily pipeline.
+  - Stored artifact by default, trimmed to the requested horizon;
+    longer horizons or `refresh=true` recompute live (ops model + ops
+    dataset + current Open-Meteo weather forecast).
 
 - `GET /model-status`
 - `GET /metrics`
@@ -33,3 +46,5 @@ FastAPI backend for hybrid forecasting and ARIMA baseline benchmarking.
 
 - This backend now directly supports all thesis objectives, including objective 2 (ARIMA baseline comparison).
 - Runtime evidence is included in API responses (`runtime.uses_tensorflow_lstm`, `runtime.lstm_backend`).
+- Legacy demo services (`app.py`, `simple_app.py`, `test_api.py`) were removed;
+  `daily_api.py` is the single backend.

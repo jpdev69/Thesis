@@ -62,8 +62,22 @@ Implementation:
 - `POST /train-daily` - train hybrid model and compute baseline comparison.
 - `POST /forecast-daily` - produce n-day recursive forecasts.
 - `POST /benchmark-arima` - run ARIMA holdout benchmark.
-- `GET /baseline-comparison` - retrieve latest hybrid-vs-ARIMA comparison.
+- `GET /baseline-comparison` - retrieve hybrid-vs-ARIMA comparison
+  (in-memory training run, or live evaluation of the operational model
+  on the current anchored data when none).
 - `GET /model-status`, `GET /health` - system state and health.
+- `GET /metrics` - validation metrics; when the operational model is
+  auto-loaded, also returns the real anchored training snapshot so the
+  frontend hydration and models.html comparison matrix use real data.
+- `GET /ops/forecast` - latest operational 7-day forecast produced by
+  `examples/daily_update.py` (stored artifact; `?refresh=true`
+  recomputes live from the ops model + ops dataset + current weather
+  forecast).
+
+On startup the API auto-loads the operational model trained by the
+daily pipeline (`models/ops/daily/`), so the web serves the
+continuously-retrained hybrid LSTM-SVM without manual re-training in
+the browser.
 
 Implementation:
 - `backend/daily_api.py`

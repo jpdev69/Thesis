@@ -1,17 +1,14 @@
 // ============================================================
-// EnergyAI Dashboard - Enhanced Forecasting Engine v2.0
-// Real metrics • Confidence bands • Anomaly detection
-// CSV drag-drop • Export • Peak load analysis
+// EnergyAI Dashboard - Hybrid LSTM-SVM Forecasting v3.0
+// Live API forecasts • Confidence bands • Anomaly detection
+// Export • Peak load analysis
 // ============================================================
 
 let chart = null;
-let model = null;
 let dailyModel = null;
-let predictionMode = 'daily';
 let currentChartData = { labels: [], data: [], colors: [], lower: [], upper: [] };
 let currentChartView = 7;
 let notificationCount = 0;
-let lastTrainingData = null;
 let lastForecastResult = null;
 
 function getApiBase() {
@@ -86,146 +83,7 @@ function saveInteraction(type, data) {
 }
 
 // ============================================================
-//  ENHANCED FORECASTING MODEL (Proper Weighted Regression)
-// ============================================================
-
-class SimpleForecaster {
-    constructor() {
-        this.weights = null;
-        this.scaler = { min: 0, max: 1 };
-        this.trained = false;
-        this.trainingMetrics = {};
-    }
-
-    normalize(data) {
-        this.scaler.min = Math.min(...data);
-        this.scaler.max = Math.max(...data);
-        const range = this.scaler.max - this.scaler.min || 1;
-        return data.map(x => (x - this.scaler.min) / range);
-    }
-
-    denormalize(data) {
-        const range = this.scaler.max - this.scaler.min || 1;
-        return data.map(x => x * range + this.scaler.min);
-    }
-
-    createSequences(data, seqLength = 24) {
-        const X = [], y = [];
-        for (let i = 0; i < data.length - seqLength; i++) {
-            X.push(data.slice(i, i + seqLength));
-            y.push(data[i + seqLength]);
-        }
-        return { X, y };
-    }
-
-    train(data) {
-        const normalized = this.normalize(data);
-        const { X, y } = this.createSequences(normalized);
-
-        // Weighted linear regression
-        this.weights = new Array(24).fill(0);
-        const n = X.length;
-        for (let j = 0; j < 24; j++) {
-            let sumXY = 0, sumX = 0;
-            for (let i = 0; i < n; i++) {
-                sumXY += X[i][j] * y[i];
-                sumX += X[i][j] * X[i][j];
-            }
-            this.weights[j] = sumX > 0 ? sumXY / sumX : 0;
-        }
-        // Normalize weights
-        const wSum = this.weights.reduce((a, b) => a + Math.abs(b), 0) || 1;
-        this.weights = this.weights.map(w => w / wSum);
-
-        this.trained = true;
-
-        // Holdout evaluation (last 20%)
-        const testSize = Math.max(Math.floor(X.length * 0.2), 1);
-        const testX = X.slice(-testSize);
-        const testY = y.slice(-testSize);
-        const predictions = testX.map(seq => this.predictOne(seq));
-
-        const predDenorm = this.denormalize(predictions);
-        const testDenorm = this.denormalize(testY);
-
-        this.trainingMetrics = this._computeMetrics(testDenorm, predDenorm);
-        this.trainingMetrics.trainSamples = X.length - testSize;
-        this.trainingMetrics.testSamples = testSize;
-
-        return this.trainingMetrics;
-    }
-
-    predictOne(sequence) {
-        let sum = 0;
-        for (let i = 0; i < sequence.length; i++) {
-            sum += sequence[i] * this.weights[i];
-        }
-        return sum;
-    }
-
-    forecast(sequence, steps) {
-        if (!this.trained) throw new Error('Model not trained');
-        const normalized = this.normalize(sequence);
-        let current = [...normalized.slice(-24)];
-        const predictions = [];
-        for (let i = 0; i < steps; i++) {
-            const next = this.predictOne(current);
-            predictions.push(next);
-            current = [...current.slice(1), next];
-        }
-        return this.denormalize(predictions);
-    }
-
-    _computeMetrics(actual, predicted) {
-        const n = actual.length;
-        if (n === 0) return { RMSE: 0, MAE: 0, MAPE: 0, R2: 0 };
-
-        let sumSqErr = 0, sumAbsErr = 0, sumAPE = 0;
-        for (let i = 0; i < n; i++) {
-            const err = actual[i] - predicted[i];
-            sumSqErr += err * err;
-            sumAbsErr += Math.abs(err);
-            if (actual[i] !== 0) sumAPE += Math.abs(err / actual[i]);
-        }
-        const rmse = Math.sqrt(sumSqErr / n);
-        const mae = sumAbsErr / n;
-        const mape = (sumAPE / n) * 100;
-
-        const mean = actual.reduce((a, b) => a + b) / n;
-        const ssTot = actual.reduce((s, v) => s + (v - mean) ** 2, 0);
-        const ssRes = actual.reduce((s, v, i) => s + (v - predicted[i]) ** 2, 0);
-        const r2 = ssTot > 0 ? 1 - ssRes / ssTot : 0;
-
-        // Directional accuracy
-        let dirCorrect = 0, dirTotal = 0;
-        for (let i = 1; i < n; i++) {
-            const actualDir = actual[i] > actual[i - 1];
-            const predDir = predicted[i] > predicted[i - 1];
-            if (actualDir === predDir) dirCorrect++;
-            dirTotal++;
-        }
-        const directionalAcc = dirTotal > 0 ? (dirCorrect / dirTotal) * 100 : 0;
-
-        // Theil's U
-        let forecastMSE = 0, naiveMSE = 0;
-        for (let i = 1; i < n; i++) {
-            forecastMSE += (actual[i] - predicted[i]) ** 2;
-            naiveMSE += (actual[i] - actual[i - 1]) ** 2;
-        }
-        const theilU = naiveMSE > 0 ? Math.sqrt(forecastMSE / naiveMSE) : 1;
-
-        // Forecast bias
-        const bias = predicted.reduce((s, v, i) => s + (v - actual[i]), 0) / n;
-        const forecastBias = mean !== 0 ? (bias / mean) * 100 : 0;
-
-        return { RMSE: rmse, MAE: mae, MAPE: mape, R2: r2,
-                 DirectionalAccuracy: directionalAcc, TheilU: theilU,
-                 ForecastBias: forecastBias };
-    }
-}
-
-// ============================================================
-//  ENHANCED DAILY PREDICTOR
+//  ENHANCED DAILY PREDICTOR (offline fallback only)
 // ============================================================
 
 class DailyPredictor {
@@ -666,22 +524,7 @@ document.addEventListener('click', function (event) {
 });
 
 // ============================================================
-//  PREDICTION MODE TOGGLE
-// ============================================================
-
-function togglePredictionMode() {
-    predictionMode = document.getElementById('predictionMode').value;
-    document.getElementById('dailyInputs').style.display = predictionMode === 'daily' ? 'block' : 'none';
-    document.getElementById('simpleInputs').style.display = predictionMode === 'simple' ? 'block' : 'none';
-}
-
-function switchToSimpleMode() {
-    document.getElementById('predictionMode').value = 'simple';
-    togglePredictionMode();
-}
-
-// ============================================================
-//  SAMPLE DATA GENERATION
+//  SAMPLE DATA GENERATION (offline last-resort fallback only)
 // ============================================================
 
 function generateDynamicSampleCSV(daysCount = 30) {
@@ -722,78 +565,37 @@ function generateDynamicSampleCSV(daysCount = 30) {
     return header + rows.join('\n');
 }
 
-function generateSampleDailyData() {
-    const sampleData = generateDynamicSampleCSV(30);
-    document.getElementById('dailyDataInput').value = sampleData;
-    logStatus('Sample daily data generated (30 days with weather & schedule)', 'success');
-}
-
-function generateSampleData() {
-    const n = 500;
-    const data = [];
-    for (let i = 0; i < n; i++) {
-        const daily = 50 * Math.sin(2 * Math.PI * i / 24) + 100;
-        data.push(Math.max(daily, 0).toFixed(2));
-    }
-    document.getElementById('dataInput').value = data.join(', ');
-    logStatus('Sample data generated (500 points)', 'success');
-}
-
-// ============================================================
-//  CSV DRAG & DROP
-// ============================================================
-
-function setupDragDrop() {
-    const dropZone = document.getElementById('csvDropZone');
-    const fileInput = document.getElementById('csvFileInput');
-    if (!dropZone || !fileInput) return;
-
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
-        dropZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); });
-    });
-
-    dropZone.addEventListener('dragenter', () => dropZone.classList.add('drag-over'));
-    dropZone.addEventListener('dragover', () => dropZone.classList.add('drag-over'));
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-    dropZone.addEventListener('drop', e => {
-        dropZone.classList.remove('drag-over');
-        const file = e.dataTransfer.files[0];
-        if (file) handleCSVFile(file);
-    });
-    dropZone.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', e => {
-        if (e.target.files[0]) handleCSVFile(e.target.files[0]);
-    });
-}
-
-function handleCSVFile(file) {
-    if (!file.name.endsWith('.csv')) {
-        logStatus('Please upload a .csv file', 'error');
-        return;
-    }
-    const reader = new FileReader();
-    reader.onload = e => {
-        document.getElementById('dailyDataInput').value = e.target.result;
-        document.getElementById('csvFileName').textContent = file.name;
-        document.getElementById('csvFileInfo').style.display = 'flex';
-        logStatus(`Loaded CSV: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`, 'success');
-    };
-    reader.readAsText(file);
-}
-
 // ============================================================
 //  FORECAST CONTEXT
 // ============================================================
 
 function initializeForecastContext() {
-    if (dailyModel && dailyModel.trained) return dailyModel;
+    if (dailyModel && dailyModel.trained && dailyModel.coefficients
+        && dailyModel.coefficients.baseLoad != null) {
+        return dailyModel;
+    }
 
     const restored = applySharedModelState();
     if (restored && restored.trained) {
-        logStatus('Loaded shared forecast model for client planning view', 'success');
-        return restored;
+        if (restored.coefficients && restored.coefficients.baseLoad != null) {
+            logStatus('Loaded shared forecast model for client planning view', 'success');
+            return restored;
+        }
+        // Model hydrated from the API carries real historical data but no
+        // client-side coefficients. Retrain the fallback model on the real
+        // series instead of predicting NaN with empty coefficients.
+        if (restored.historicalData
+            && Array.isArray(restored.historicalData.consumption)
+            && restored.historicalData.consumption.length >= 7) {
+            dailyModel = new DailyPredictor();
+            dailyModel.train(restored.historicalData);
+            saveSharedDailyModel(dailyModel);
+            logStatus('Prepared client fallback model on real campus data', 'success');
+            return dailyModel;
+        }
     }
 
+    // Last resort (offline, nothing cached): synthetic demo data.
     const sampleCsv = generateDynamicSampleCSV(30);
 
     dailyModel = new DailyPredictor();
@@ -805,285 +607,239 @@ function initializeForecastContext() {
 
     dailyModel.train(dailyData);
     saveSharedDailyModel(dailyModel);
-    logStatus('Prepared default forecast context for client planning view', 'success');
+    logStatus('Prepared default forecast context for client planning view (demo data)', 'success');
     return dailyModel;
 }
 
-function trainDailyModel() {
-    if (predictionMode === 'simple') { trainModel(); return; }
+// ============================================================
+//  DAILY FORECAST (live hybrid LSTM-SVM API first, JS demo fallback)
+// ============================================================
 
-    const dataInput = document.getElementById('dailyDataInput').value;
-    if (!dataInput.trim()) {
-        logStatus('Please provide daily data with weather and schedule', 'error');
-        return;
+async function fetchOpsForecast(days) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 90000);
+    try {
+        const res = await fetch(`${getApiBase()}/ops/forecast?days=${days}`, { signal: controller.signal });
+        if (!res.ok) return null;
+        const payload = await res.json();
+        if (payload && payload.forecast && Array.isArray(payload.forecast.predictions_kwh)
+            && payload.forecast.predictions_kwh.length > 0) {
+            return payload;
+        }
+        return null;
+    } catch (_) {
+        return null;
+    } finally {
+        clearTimeout(timer);
     }
-
-    logStatus('Training daily prediction model...');
-    showLoading('trainBtn', 'Training...');
-
-    setTimeout(() => {
-        try {
-            dailyModel = new DailyPredictor();
-            const dailyData = dailyModel.parseDailyData(dataInput);
-
-            if (dailyData.consumption.length < 7) {
-                logStatus('Need at least 7 days of data', 'error');
-                hideLoading('trainBtn', 'Train Model');
-                return;
-            }
-
-            lastTrainingData = dailyData;
-            const stats = dailyModel.train(dailyData);
-            saveSharedDailyModel(dailyModel);
-            
-            // Track training interaction
-            saveInteraction('training', {
-                type: 'daily',
-                dataPoints: dailyData.consumption.length,
-                metrics: stats.metrics,
-                classDays: stats.classDays,
-                noClassDays: stats.noClassDays
-            });
-            const m = stats.metrics;
-
-            // Real computed metrics
-            animateMetric('rmse', `${m.RMSE.toFixed(2)} kWh`);
-            animateMetric('mae', `${m.MAE.toFixed(2)} kWh`);
-            animateMetric('mape', `${m.MAPE.toFixed(2)}%`);
-            animateMetric('r2', m.R2.toFixed(2));
-            animateMetric('directionalAcc', `${m.DirectionalAccuracy.toFixed(2)}%`);
-
-            // Detect anomalies in training data
-            const anomalies = dailyModel.detectAnomalies(dailyData.consumption);
-            updateAnomalyPanel(anomalies, dailyData.dates);
-
-            // Update stat cards
-            updateStatCard('forecastAccuracy', `${(100 - m.MAPE).toFixed(2)}%`, `MAPE: ${m.MAPE.toFixed(2)}%`);
-            updateStatCard('modelStatus', 'Active', `Trained on ${dailyData.consumption.length} days`);
-
-            logStatus('Daily prediction model trained successfully!', 'success');
-            logStatus(`Real metrics — RMSE: ${m.RMSE.toFixed(2)}, MAE: ${m.MAE.toFixed(2)}, MAPE: ${m.MAPE.toFixed(2)}%, R²: ${m.R2.toFixed(2)}`, 'success');
-            logStatus(`Class days avg: ${stats.classAvg.toFixed(2)} kWh | No-class avg: ${stats.noClassAvg.toFixed(2)} kWh | Δ${stats.percentDiff}%`, 'success');
-
-        } catch (error) {
-            logStatus(`Training error: ${error.message}`, 'error');
-        } finally {
-            hideLoading('trainBtn', 'Train Model');
-        }
-    }, 200);
 }
-
-function trainModel() {
-    const dataInput = document.getElementById('dataInput').value;
-    if (!dataInput.trim()) { logStatus('Please provide energy data', 'error'); return; }
-    const values = dataInput.split(',').map(v => parseFloat(v.trim())).filter(v => !isNaN(v));
-    if (values.length < 50) { logStatus('Need at least 50 data points', 'error'); return; }
-
-    logStatus('Training model...');
-    showLoading('trainBtn', 'Training...');
-
-    setTimeout(() => {
-        try {
-            model = new SimpleForecaster();
-            const metrics = model.train(values);
-            
-            // Track training interaction
-            saveInteraction('training', {
-                type: 'simple',
-                dataPoints: values.length,
-                metrics: metrics
-            });
-            
-            animateMetric('rmse', `${metrics.RMSE.toFixed(2)} kWh`);
-            animateMetric('mae', `${metrics.MAE.toFixed(2)} kWh`);
-            animateMetric('mape', metrics.MAPE.toFixed(2) + '%');
-            animateMetric('r2', metrics.R2.toFixed(2));
-            if (document.getElementById('directionalAcc')) {
-                animateMetric('directionalAcc', metrics.DirectionalAccuracy.toFixed(2) + '%');
-            }
-            logStatus(`Model trained — RMSE: ${metrics.RMSE.toFixed(2)} kWh, MAE: ${metrics.MAE.toFixed(2)} kWh, MAPE: ${metrics.MAPE.toFixed(2)}%, R²: ${metrics.R2.toFixed(2)}`, 'success');
-        } catch (error) {
-            logStatus(`Error: ${error.message}`, 'error');
-        } finally {
-            hideLoading('trainBtn', 'Train Model');
-        }
-    }, 200);
-}
-
-// ============================================================
-//  DAILY FORECAST
-// ============================================================
 
 function makeDailyForecast() {
-    if (predictionMode === 'simple') { makeForecast(); return; }
 
     const days = parseInt(document.getElementById('forecastHorizon').value);
-    const temperature = 28;
-    const humidity = 70;
-    const rainfall = 0;
-    const hasClasses = 1;
 
-    logStatus(`Generating ${days}-day forecast for client planning...`);
+    logStatus(`Generating ${days}-day forecast...`);
     showLoading('forecastBtn', 'Forecasting...');
 
-    setTimeout(() => {
+    fetchOpsForecast(days).then(apiResult => {
         try {
-            const forecastContext = initializeForecastContext();
-            const futureWeather = [], futureSchedule = [];
-            const weekdayPattern = [1, 1, 1, 1, 1, 0, 0];
-            for (let i = 0; i < days; i++) {
-                const dayOfWeek = (i + 1) % 7;
-                const isWeekend = weekdayPattern[dayOfWeek] === 0;
-                const tempOffset = ((i + 1) % 3) - 1;
-                futureWeather.push({
-                    temperature: temperature + tempOffset,
-                    humidity: humidity + ((i + 1) % 2 === 0 ? 2 : -1),
-                    rainfall: rainfall + ((i + 1) % 4 === 0 ? 1 : 0)
-                });
-                futureSchedule.push(isWeekend ? 0 : (i === 0 ? hasClasses : 1));
+            if (apiResult) {
+                renderOpsForecast(apiResult, days);
+            } else {
+                logStatus('Live API unreachable — using client-side demo model', 'error');
+                renderLocalDailyForecast(days);
             }
-
-            const result = forecastContext.predictWeek(futureWeather, futureSchedule);
-            const predictions = result.predictions;
-            const lower = result.lower;
-            const upper = result.upper;
-
-            // Peak analysis
-            const peakAnalysis = dailyModel.estimatePeakLoad(predictions);
-            updatePeakPanel(peakAnalysis, days);
-
-            // Anomaly check on forecast
-            const forecastAnomalies = dailyModel.detectAnomalies(predictions, 1.5);
-            if (forecastAnomalies.length > 0) {
-                logStatus(`${forecastAnomalies.length} unusual day(s) detected in forecast`, 'error');
-            }
-
-            const costPerKwh = 12.383;
-            const costs = predictions.map(p => p * costPerKwh);
-            const totalConsumption = predictions.reduce((a, b) => a + b, 0);
-            const totalCost = costs.reduce((a, b) => a + b, 0);
-            const recommendedBudget = totalCost * 1.10;
-
-            // Update summary cards
-            const fmt = (n) => n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            animateValue('weeklyConsumption', `${totalConsumption.toFixed(2)} kWh`);
-            animateValue('weeklyCost', `₱${fmt(totalCost)}`);
-            animateValue('recommendedBudget', `₱${fmt(recommendedBudget)}`);
-
-            // Confidence display
-            const totalLower = lower.reduce((a, b) => a + b, 0) * costPerKwh;
-            const totalUpper = upper.reduce((a, b) => a + b, 0) * costPerKwh;
-            const confEl = document.getElementById('confidenceRange');
-            if (confEl) {
-                confEl.textContent = `₱${fmt(totalLower)} — ₱${fmt(totalUpper)}`;
-            }
-
-            // Savings calculations
-            const savingsPercent = 0.065;
-            const avgDaily = totalConsumption / days;
-            const avgDailyCost = totalCost / days;
-
-            animateValue('dailySavings', `₱${fmt(avgDailyCost * savingsPercent)}`);
-            animateValue('dailySavingsKwh', `${(avgDaily * savingsPercent).toFixed(2)} kWh/day`);
-            animateValue('weeklySavings', `₱${fmt(totalCost * savingsPercent)}`);
-            animateValue('weeklySavingsKwh', `${(totalConsumption * savingsPercent).toFixed(2)} kWh/week`);
-            animateValue('yearlySavings', `₱${fmt(avgDailyCost * 365 * savingsPercent)}`);
-            animateValue('yearlySavingsKwh', `${(avgDaily * 365 * savingsPercent).toFixed(2)} kWh/year`);
-
-            // Update client-facing stat cards
-            updateStatCard('currentLoad', `${avgDaily.toFixed(2)} kW`, `Avg daily for ${days}-day forecast`);
-            updateStatCard('forecastAccuracy', `${Math.max(90, 100 - Math.min(20, (totalConsumption / Math.max(days, 1)) / 50)).toFixed(2)}%`, 'Forecast confidence for planning');
-            updateStatCard('annualSavings', `₱${fmt(totalCost * 0.065)}`, 'Estimated planning savings');
-            updateStatCard('modelStatus', 'Ready', 'Client forecast service online');
-
-            lastForecastResult = { predictions, lower, upper, futureWeather, futureSchedule, peakAnalysis };
-            
-            // Track forecast interaction
-            saveInteraction('forecast', {
-                type: 'daily',
-                days: days,
-                totalConsumption: totalConsumption,
-                totalCost: totalCost,
-                avgDaily: avgDaily,
-                peakLoad: peakAnalysis.peakValue,
-                loadFactor: peakAnalysis.loadFactor
-            });
-            
-            updateDailyChart(predictions, futureWeather, futureSchedule, lower, upper, peakAnalysis);
-
-            logStatus(`${days}-day forecast complete — Total: ${totalConsumption.toFixed(2)} kWh (₱${fmt(totalCost)})`, 'success');
-            logStatus(`95% CI: ₱${fmt(totalLower)} — ₱${fmt(totalUpper)}`, 'success');
-            logStatus(`Peak: ${peakAnalysis.peakValue.toFixed(2)} kWh (Day ${peakAnalysis.peakDayIndex + 1}) | Load factor: ${(peakAnalysis.loadFactor * 100).toFixed(2)}%`, 'success');
-
         } catch (error) {
             logStatus(`Forecast error: ${error.message}`, 'error');
         } finally {
             hideLoading('forecastBtn', 'Generate Daily Forecast');
         }
-    }, 200);
+    });
 }
 
-function makeForecast() {
-    const dataInput = document.getElementById('dataInput').value;
-    const steps = parseInt(document.getElementById('forecastHorizon')?.value || 24);
-    if (!dataInput.trim()) { logStatus('Please provide energy data first', 'error'); return; }
-    if (!model || !model.trained) { logStatus('Please train the model first', 'error'); return; }
+function renderLocalDailyForecast(days) {
+    const temperature = 28;
+    const humidity = 70;
+    const rainfall = 0;
+    const hasClasses = 1;
 
-    const values = dataInput.split(',').map(v => parseFloat(v.trim())).filter(v => !isNaN(v));
-    if (values.length < 24) { logStatus('Need at least 24 data points', 'error'); return; }
-
-    logStatus(`Generating ${steps}-step forecast...`);
-    showLoading('forecastBtn', 'Forecasting...');
-
-    setTimeout(() => {
-        try {
-            const forecast = model.forecast(values, steps);
-            updateChart(values.slice(-100), forecast);
-
-            const costPerKwh = 12.383;
-            const total = forecast.reduce((a, b) => a + b, 0);
-            const totalCost = total * costPerKwh;
-            const fmtS = (n) => n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            animateValue('weeklyConsumption', `${total.toFixed(2)} kWh`);
-            animateValue('weeklyCost', `₱${fmtS(totalCost)}`);
-            animateValue('recommendedBudget', `₱${fmtS(totalCost * 1.10)}`);
-
-            const sp = 0.065, avgD = total / steps, avgDC = totalCost / steps;
-            animateValue('dailySavings', `₱${fmtS(avgDC * sp)}`);
-            animateValue('dailySavingsKwh', `${(avgD * sp).toFixed(2)} kWh/day`);
-            animateValue('weeklySavings', `₱${fmtS(avgDC * 7 * sp)}`);
-            animateValue('weeklySavingsKwh', `${(avgD * 7 * sp).toFixed(2)} kWh/week`);
-            animateValue('yearlySavings', `₱${fmtS(avgDC * 365 * sp)}`);
-            animateValue('yearlySavingsKwh', `${(avgD * 365 * sp).toFixed(2)} kWh/year`);
-
-            // Track forecast interaction
-            saveInteraction('forecast', {
-                type: 'simple',
-                steps: steps,
-                totalConsumption: total,
-                totalCost: totalCost,
-                avgPerStep: avgD
+    try {
+        const forecastContext = initializeForecastContext();
+        const futureWeather = [], futureSchedule = [];
+        const weekdayPattern = [1, 1, 1, 1, 1, 0, 0];
+        for (let i = 0; i < days; i++) {
+            const dayOfWeek = (i + 1) % 7;
+            const isWeekend = weekdayPattern[dayOfWeek] === 0;
+            const tempOffset = ((i + 1) % 3) - 1;
+            futureWeather.push({
+                temperature: temperature + tempOffset,
+                humidity: humidity + ((i + 1) % 2 === 0 ? 2 : -1),
+                rainfall: rainfall + ((i + 1) % 4 === 0 ? 1 : 0)
             });
-
-            logStatus(`Forecast: ${steps} steps, Total: ${total.toFixed(2)} kWh`, 'success');
-        } catch (error) {
-            logStatus(`Error: ${error.message}`, 'error');
-        } finally {
-            hideLoading('forecastBtn', 'Generate Forecast');
+            futureSchedule.push(isWeekend ? 0 : (i === 0 ? hasClasses : 1));
         }
-    }, 200);
+
+        const result = forecastContext.predictWeek(futureWeather, futureSchedule);
+
+        const ctx = {
+            predictions: result.predictions,
+            lower: result.lower,
+            upper: result.upper,
+            futureWeather,
+            futureSchedule,
+            peakAnalysis: forecastContext.estimatePeakLoad(result.predictions),
+            dates: null,
+            sourceLabel: 'client-side demo model',
+            accuracyPercent: null,
+            anomalies: forecastContext.detectAnomalies(result.predictions, 1.5)
+        };
+
+        renderForecastResult(ctx, days);
+
+        updateAnomalyPanel(ctx.anomalies, null);
+        if (ctx.anomalies.length > 0) {
+            logStatus(`${ctx.anomalies.length} unusual day(s) detected in forecast`, 'error');
+        }
+    } catch (error) {
+        logStatus(`Forecast error: ${error.message}`, 'error');
+    }
+}
+
+function renderOpsForecast(apiResult, days) {
+    const f = apiResult.forecast;
+    const ops = apiResult.ops_state || {};
+
+    const predictions = f.predictions_kwh;
+    const lower = f.lower95_kwh || predictions.map(() => null);
+    const upper = f.upper95_kwh || predictions.map(() => null);
+    const futureWeather = f.dates.map((d, i) => ({
+        temperature: (f.temperature && f.temperature[i] != null) ? f.temperature[i] : null,
+        humidity: (f.humidity && f.humidity[i] != null) ? f.humidity[i] : null,
+        rainfall: (f.rainfall && f.rainfall[i] != null) ? f.rainfall[i] : null
+    }));
+    const futureSchedule = f.has_classes || [];
+    const p = f.peak_analysis || {};
+    const peakAnalysis = {
+        peakValue: p.peak_value != null ? p.peak_value : Math.max(...predictions),
+        peakDayIndex: p.peak_day_index != null ? p.peak_day_index : predictions.indexOf(Math.max(...predictions)),
+        minValue: p.min_value != null ? p.min_value : Math.min(...predictions),
+        minDayIndex: p.min_day_index != null ? p.min_day_index : predictions.indexOf(Math.min(...predictions)),
+        avgLoad: p.avg_load != null ? p.avg_load : predictions.reduce((a, b) => a + b, 0) / predictions.length,
+        loadFactor: p.load_factor != null ? p.load_factor : 0,
+        range: p.range != null ? p.range : (Math.max(...predictions) - Math.min(...predictions))
+    };
+
+    const validationMape = ops.validation_metrics && Number(ops.validation_metrics.MAPE);
+    const ctx = {
+        predictions,
+        lower,
+        upper,
+        futureWeather,
+        futureSchedule,
+        peakAnalysis,
+        dates: f.dates || null,
+        sourceLabel: 'hybrid LSTM-SVM (operational model'
+            + (ops.model_trained_at ? ', trained ' + ops.model_trained_at.split('T')[0] : '')
+            + ')',
+        accuracyPercent: Number.isFinite(validationMape) ? (100 - validationMape) : null,
+        anomalies: (f.anomaly_flags || []).map((flag, i) => flag ? { index: i } : null).filter(Boolean)
+    };
+
+    renderForecastResult(ctx, days);
+
+    // Populate the anomaly panel from real forecast flags
+    const predMean = predictions.reduce((a, b) => a + b, 0) / predictions.length;
+    const anomalyItems = [];
+    (f.anomaly_flags || []).forEach((flag, i) => {
+        if (flag && predictions[i] != null) {
+            const dev = predMean > 0 ? ((predictions[i] - predMean) / predMean * 100) : 0;
+            anomalyItems.push({
+                index: i,
+                value: predictions[i],
+                type: predictions[i] >= predMean ? 'spike' : 'dip',
+                deviationPct: dev.toFixed(2)
+            });
+        }
+    });
+    updateAnomalyPanel(anomalyItems, f.dates);
+    if (anomalyItems.length > 0) {
+        logStatus(`Unusual day(s) flagged in forecast: ${anomalyItems.map(a => f.dates[a.index]).join(', ')}`, 'error');
+    }
+    logStatus(`Forecast served by ${ctx.sourceLabel}`, 'success');
+}
+
+function renderForecastResult(ctx, days) {
+    const { predictions, lower, upper, futureWeather, futureSchedule, peakAnalysis } = ctx;
+
+    // Peak analysis
+    updatePeakPanel(peakAnalysis, days, ctx.dates);
+
+    const costPerKwh = 12.383;
+    const costs = predictions.map(p => p * costPerKwh);
+    const totalConsumption = predictions.reduce((a, b) => a + b, 0);
+    const totalCost = costs.reduce((a, b) => a + b, 0);
+    const recommendedBudget = totalCost * 1.10;
+
+    // Update summary cards
+    const fmt = (n) => n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    animateValue('weeklyConsumption', `${totalConsumption.toFixed(2)} kWh`);
+    animateValue('weeklyCost', `₱${fmt(totalCost)}`);
+    animateValue('recommendedBudget', `₱${fmt(recommendedBudget)}`);
+
+    // Confidence display
+    const totalLower = lower.reduce((a, b) => a + (b || 0), 0) * costPerKwh;
+    const totalUpper = upper.reduce((a, b) => a + (b || 0), 0) * costPerKwh;
+    const confEl = document.getElementById('confidenceRange');
+    if (confEl) {
+        confEl.textContent = `₱${fmt(totalLower)} — ₱${fmt(totalUpper)}`;
+    }
+
+    const avgDaily = totalConsumption / days;
+
+    // Update client-facing stat cards
+    updateStatCard('currentLoad', `${avgDaily.toFixed(2)} kW`, `Avg daily for ${days}-day forecast`);
+    if (ctx.accuracyPercent != null) {
+        updateStatCard('forecastAccuracy', `${ctx.accuracyPercent.toFixed(2)}%`, 'Validation accuracy (100 - MAPE)');
+    } else {
+        updateStatCard('forecastAccuracy', `${Math.max(90, 100 - Math.min(20, (totalConsumption / Math.max(days, 1)) / 50)).toFixed(2)}%`, 'Forecast confidence for planning');
+    }
+    updateStatCard('forecastTotal', `₱${fmt(totalCost)}`, `Total ${days}-day forecast cost`);
+    updateStatCard('modelStatus', 'Ready', 'Hybrid LSTM-SVM forecast online');
+
+    lastForecastResult = { predictions, lower, upper, futureWeather, futureSchedule, peakAnalysis, dates: ctx.dates };
+
+    // Track forecast interaction
+    saveInteraction('forecast', {
+        type: 'daily',
+        days: days,
+        source: ctx.sourceLabel,
+        totalConsumption: totalConsumption,
+        totalCost: totalCost,
+        avgDaily: avgDaily,
+        peakLoad: peakAnalysis.peakValue,
+        loadFactor: peakAnalysis.loadFactor
+    });
+
+    updateDailyChart(predictions, futureWeather, futureSchedule, lower, upper, peakAnalysis, ctx.dates);
+
+    logStatus(`${days}-day forecast complete — Total: ${totalConsumption.toFixed(2)} kWh (₱${fmt(totalCost)})`, 'success');
+    logStatus(`95% CI: ₱${fmt(totalLower)} — ₱${fmt(totalUpper)}`, 'success');
+    logStatus(`Peak: ${peakAnalysis.peakValue.toFixed(2)} kWh (Day ${peakAnalysis.peakDayIndex + 1}) | Load factor: ${(peakAnalysis.loadFactor * 100).toFixed(2)}%`, 'success');
+
 }
 
 // ============================================================
 //  CHART UPDATES
 // ============================================================
 
-function updateDailyChart(predictions, weather, schedule, lower, upper, peakAnalysis) {
-    const labels = predictions.map((_, i) => {
-        const date = new Date();
-        date.setDate(date.getDate() + i);
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    });
+function updateDailyChart(predictions, weather, schedule, lower, upper, peakAnalysis, dateStrings) {
+    const labels = (dateStrings && dateStrings.length === predictions.length)
+        ? dateStrings.map(d => new Date(`${d}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))
+        : predictions.map((_, i) => {
+            const date = new Date();
+            date.setDate(date.getDate() + i);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        });
 
     const colors = schedule.map((hasClasses, i) => {
         if (peakAnalysis && i === peakAnalysis.peakDayIndex) return 'rgba(239, 68, 68, 0.85)';
@@ -1122,23 +878,6 @@ function applyChartView() {
     chart.update('active');
 }
 
-function updateChart(actualData, forecastData) {
-    const actualLabels = actualData.map((_, i) => `T-${actualData.length - i}`);
-    const forecastLabels = forecastData.map((_, i) => `T+${i + 1}`);
-
-    const colors = [
-        ...Array(actualData.length).fill('rgba(59, 130, 246, 0.8)'),
-        ...Array(forecastData.length).fill('rgba(16, 185, 129, 0.8)')
-    ];
-
-    currentChartData = {
-        labels: [...actualLabels, ...forecastLabels],
-        data: [...actualData, ...forecastData],
-        colors, lower: [], upper: []
-    };
-    applyChartView();
-}
-
 // ============================================================
 //  UI PANELS
 // ============================================================
@@ -1150,7 +889,7 @@ function updateAnomalyPanel(anomalies, dates) {
     if (anomalies.length === 0) {
         container.innerHTML = `<div class="anomaly-empty">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            <span>No anomalies detected in historical data</span>
+            <span>No anomalies detected in forecast horizon</span>
         </div>`;
         return;
     }
@@ -1174,13 +913,19 @@ function updateAnomalyPanel(anomalies, dates) {
     }
 }
 
-function updatePeakPanel(peakAnalysis, days) {
+function updatePeakPanel(peakAnalysis, days, dateStrings) {
     const el = document.getElementById('peakInfo');
     if (!el) return;
 
-    const peakDate = new Date();
-    peakDate.setDate(peakDate.getDate() + peakAnalysis.peakDayIndex);
-    const peakDateStr = peakDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    let peakDateStr;
+    if (dateStrings && dateStrings[peakAnalysis.peakDayIndex]) {
+        peakDateStr = new Date(`${dateStrings[peakAnalysis.peakDayIndex]}T00:00:00`)
+            .toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    } else {
+        const peakDate = new Date();
+        peakDate.setDate(peakDate.getDate() + peakAnalysis.peakDayIndex);
+        peakDateStr = peakDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    }
 
     el.innerHTML = `
         <div class="peak-stat">
@@ -1219,16 +964,16 @@ function exportForecastCSV() {
         return;
     }
 
-    const { predictions, lower, upper, futureWeather, futureSchedule } = lastForecastResult;
+    const { predictions, lower, upper, futureWeather, futureSchedule, dates } = lastForecastResult;
     let csv = 'Date,Predicted_kWh,Lower_95,Upper_95,Temperature,Humidity,Rainfall,HasClasses,Cost_PHP\n';
 
     predictions.forEach((pred, i) => {
-        const date = new Date();
-        date.setDate(date.getDate() + i);
+        const date = (dates && dates[i]) ? new Date(`${dates[i]}T00:00:00`) : new Date();
+        date.setDate(date.getDate() + ((dates && dates[i]) ? 0 : i));
         const dateStr = date.toISOString().split('T')[0];
         const w = futureWeather[i];
         const s = futureSchedule[i];
-        csv += `${dateStr},${pred.toFixed(2)},${lower[i]?.toFixed(2) || ''},${upper[i]?.toFixed(2) || ''},${w.temperature.toFixed(2)},${w.humidity.toFixed(2)},${w.rainfall.toFixed(2)},${s},${(pred * 12.383).toFixed(2)}\n`;
+        csv += `${dateStr},${pred.toFixed(2)},${lower[i]?.toFixed(2) || ''},${upper[i]?.toFixed(2) || ''},${w.temperature != null ? w.temperature.toFixed(2) : ''},${w.humidity != null ? w.humidity.toFixed(2) : ''},${w.rainfall != null ? w.rainfall.toFixed(2) : ''},${s},${(pred * 12.383).toFixed(2)}\n`;
     });
 
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -1252,14 +997,6 @@ function exportForecastCSV() {
 // ============================================================
 //  ANIMATIONS & HELPERS
 // ============================================================
-
-function animateMetric(id, newValue) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.classList.add('metric-update');
-    el.textContent = newValue;
-    setTimeout(() => el.classList.remove('metric-update'), 600);
-}
 
 function animateValue(id, newValue) {
     const el = document.getElementById(id);
@@ -1334,10 +1071,9 @@ window.addEventListener('load', () => {
     loadTheme();
     loadSidebarState();
     initChart();
-    setupDragDrop();
     hydrateSharedModelFromApi().finally(() => {
-        logStatus('Dashboard initialized — EnergyAI v2.0', 'success');
-        logStatus('Enhanced forecasting with confidence intervals, anomaly detection, and peak load analysis', 'success');
+        logStatus('Dashboard initialized — EnergyAI v3.0', 'success');
+        logStatus('Live hybrid LSTM-SVM forecasts with confidence intervals, anomaly detection, and peak load analysis', 'success');
     });
 });
 
