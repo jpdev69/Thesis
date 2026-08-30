@@ -222,6 +222,16 @@
         </header>
 
         <div class="content-grid">
+            <!-- Demo Controls Notice -->
+            <div class="card" style="grid-column: span 12;">
+                <div class="card-body" style="padding: 18px 20px;">
+                    <p style="margin: 0; color: var(--text-secondary); line-height: 1.6;">
+                        Most controls on this page are demonstration preferences for the thesis interface.
+                        Only the API endpoint is persisted by this build. Email notifications, scheduled
+                        delivery, building sensors, tariffs, backup, and deletion are not implemented.
+                    </p>
+                </div>
+            </div>
             <!-- Profile Settings -->
             <div class="card" style="grid-column: span 6;">
                 <div class="card-header">
@@ -324,7 +334,7 @@
                         <div class="form-group">
                             <label>API Key</label>
                             <div style="display: flex; gap: 8px;">
-                                <input type="password" class="input-field" value="sk_test_1234567890" placeholder="Enter API key" style="flex: 1;">
+                                <input type="password" class="input-field" placeholder="API key not implemented in this build" style="flex: 1;">
                                 <button class="btn-secondary">Regenerate</button>
                             </div>
                         </div>

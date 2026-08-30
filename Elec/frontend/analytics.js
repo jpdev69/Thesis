@@ -345,25 +345,21 @@ function updateAnalyticsFromData(data) {
     const avgConsumption = consumption.length
         ? consumption.reduce((a, b) => a + b, 0) / consumption.length
         : 3200;
-    const peakDemand = Math.max(latest * 0.12, 80);
-    
-    // Calculate savings from forecast history
-    let savingsEstimate = avgConsumption * 0.065 * 7;
-    if (forecastHistory.length > 0) {
-        const lastForecast = forecastHistory[0];
-        const forecastData = lastForecast.data;
-        if (forecastData.totalCost) {
-            savingsEstimate = forecastData.totalCost * 0.065;
-        }
-    }
+    const peakDay = consumption.length ? Math.max(...consumption) : 0;
+    const totalConsumption = Math.round(avgConsumption * slice);
 
     const rmse = trainingMetrics?.RMSE ?? 0;
     const mae = trainingMetrics?.MAE ?? 0;
     const r2 = trainingMetrics?.R2 ?? 0;
-    const accuracyPercent = Math.max(0, Math.min(100, r2 * 100));
 
-    // Calculate total facilities from available data
-    const facilitiesCount = consumption.length > 0 ? Math.ceil(consumption.length / 2.5) : 12;
+    // Schedule split from the available schedule context (class vs no-class).
+    const scheduleFlags = (loadSharedForecastState()?.historicalData?.hasClasses) || [];
+    const classDays = scheduleFlags.filter(f => f === 1).length;
+    const noClassDays = scheduleFlags.filter(f => f === 0).length;
+    const classShare = (classDays + noClassDays) > 0
+        ? Math.round(classDays / (classDays + noClassDays) * 100)
+        : 0;
+    const noClassShare = (classDays + noClassDays) > 0 ? 100 - classShare : 0;
 
     // — Trend chart —
     if (charts.trend) {
@@ -373,39 +369,36 @@ function updateAnalyticsFromData(data) {
         charts.trend.update();
     }
 
-    // — Building comparison —
+    // — Day-type comparison (class vs no-class average) —
     if (charts.building) {
-        const base = avgConsumption || 3200;
+        const flags = scheduleFlags;
+        const classVals = flags.length ? consumption.filter((_, i) => flags[i] === 1) : [];
+        const noClassVals = flags.length ? consumption.filter((_, i) => flags[i] === 0) : [];
+        const classMean = classVals.length ? classVals.reduce((a, b) => a + b, 0) / classVals.length : avgConsumption;
+        const noClassMean = noClassVals.length ? noClassVals.reduce((a, b) => a + b, 0) / noClassVals.length : avgConsumption;
         charts.building.data.datasets[0].data = [
-            Math.round(base * 1.05),
-            Math.round(base * 0.92),
-            Math.round(base * 0.88),
-            Math.round(base * 0.84),
-            Math.round(base * 0.80)
+            Math.round(classMean),
+            Math.round(noClassMean)
         ];
         charts.building.update();
     }
 
-    // — Peak period —
+    // — Weekly consumption (sum per week) —
     if (charts.peak) {
-        const pk = peakDemand;
-        charts.peak.data.datasets[0].data = [
-            Math.round(pk * 0.75),
-            Math.round(pk * 0.82),
-            Math.round(pk * 1.0),
-            Math.round(pk * 1.15),
-            Math.round(pk * 1.25),
-            Math.round(pk * 1.05)
-        ];
+        const weeks = [];
+        for (let i = 0; i < 6; i++) {
+            const chunk = consumption.slice(-(6 - i) * 7, (6 - i) === 0 ? undefined : -(6 - i - 1) * 7);
+            weeks.push(Math.round(chunk.reduce((a, b) => a + b, 0)));
+        }
+        charts.peak.data.datasets[0].data = weeks;
         charts.peak.update();
     }
 
-    // — Efficiency doughnut —
+    // — Schedule distribution (class vs no-class share) —
     if (charts.efficiency) {
-        const efficient = hasRealData ? Math.max(10, Math.min(90, accuracyPercent)) : 65;
-        const moderate = Math.max(5, Math.min(40, Math.round((100 - efficient) * 0.4)));
-        const needsImprovement = Math.max(5, 100 - efficient - moderate);
-        charts.efficiency.data.datasets[0].data = [efficient, moderate, needsImprovement];
+        if (classShare > 0 || noClassShare > 0) {
+            charts.efficiency.data.datasets[0].data = [classShare, noClassShare];
+        }
         charts.efficiency.update();
     }
 
@@ -414,11 +407,10 @@ function updateAnalyticsFromData(data) {
     const statChanges = document.querySelectorAll('.stat-change');
     
     if (statValues.length >= 4) {
-        const totalConsumption = Math.round(avgConsumption * slice);
         statValues[0].textContent = `${totalConsumption.toLocaleString()} kWh`;
-        statValues[1].textContent = `₱${Math.round(savingsEstimate).toLocaleString('en-PH')}`;
-        statValues[2].textContent = `${Math.round(peakDemand)} kW`;
-        statValues[3].textContent = `${facilitiesCount}`;
+        statValues[1].textContent = `₱${Math.round(totalConsumption * 12.383).toLocaleString('en-PH')}`;
+        statValues[2].textContent = `${Math.round(peakDay).toLocaleString()} kWh`;
+        statValues[3].textContent = `${slice}`;
         
         // Update stat changes with real data
         if (statChanges.length >= 4) {
@@ -428,21 +420,20 @@ function updateAnalyticsFromData(data) {
             if (consumption.length >= 2) {
                 const prevAvg = consumption.slice(0, -slice).reduce((a, b) => a + b, 0) / Math.max(1, consumption.length - slice);
                 const change = ((avgConsumption - prevAvg) / prevAvg * 100).toFixed(1);
-                statChanges[0].textContent = `${change > 0 ? '+' : ''}${change}% vs last period`;
+                statChanges[0].textContent = `${change > 0 ? '+' : ''}${change}% vs prior period`;
                 statChanges[0].className = change < 0 ? 'stat-change positive' : 'stat-change negative';
             } else {
-                statChanges[0].textContent = 'vs last period';
+                statChanges[0].textContent = 'Selected period';
             }
             
-            // Savings improvement
-            statChanges[1].textContent = trainingHistory.length > 1 ? '+12.4% improvement' : 'Estimated potential';
+            // Cost note
+            statChanges[1].textContent = 'Reference rate ₱12.383/kWh';
             
-            // Peak demand timing
-            const peakHour = Math.floor(12 + Math.random() * 4); // Realistic peak between 12-4 PM
-            statChanges[2].textContent = `At ${peakHour}:00 PM`;
+            // Peak day note
+            statChanges[2].textContent = 'Highest daily value in period';
             
-            // Facilities status
-            statChanges[3].textContent = `${recentActivity.length} activities today`;
+            // Days covered note
+            statChanges[3].textContent = 'Daily rows shown';
         }
     }
 
@@ -451,13 +442,13 @@ function updateAnalyticsFromData(data) {
     if (subtitle) {
         const dateInfo = getCurrentDateInfo();
         if (data.source === 'api') {
-            subtitle.textContent = `Live data from API — model is active and running. Last updated: ${dateInfo.formattedDate}.`;
+            subtitle.textContent = `Data served by the EnergyAI API. Last updated: ${dateInfo.formattedDate}.`;
         } else if (data.source === 'local' && hasRealData) {
             const trainCount = trainingHistory.length;
             const forecastCount = forecastHistory.length;
             subtitle.textContent = `Analytics based on ${trainCount} training session${trainCount !== 1 ? 's' : ''} and ${forecastCount} forecast${forecastCount !== 1 ? 's' : ''}. Model metrics: RMSE ${rmse.toFixed(1)} kWh, MAE ${mae.toFixed(1)} kWh, R² ${r2.toFixed(3)}. Data as of ${dateInfo.formattedDate}.`;
         } else {
-            subtitle.textContent = `No trained model found. Train a model from the Dashboard to see real analytics based on your energy data. Today is ${dateInfo.formattedDate}.`;
+            subtitle.textContent = `No trained model found. Model training is an administrator task in the Models workspace. Today is ${dateInfo.formattedDate}.`;
         }
     }
 
@@ -531,11 +522,11 @@ function initCharts() {
         charts.building = new Chart(buildingCtx, {
             type: 'bar',
             data: {
-                labels: ['Main Campus', 'Library', 'Gymnasium', 'Lab Building', 'Admin Office'],
+                labels: ['Class Days', 'No-Class Days'],
                 datasets: [{
-                    label: 'Consumption (kWh)',
-                    data: [3360, 2944, 2822, 2688, 2560],
-                    backgroundColor: ['#10b981', '#14b8a6', '#22c55e', '#34d399', '#6ee7b7'],
+                    label: 'Average Consumption (kWh)',
+                    data: [3200, 2800],
+                    backgroundColor: ['#10b981', '#f59e0b'],
                     borderRadius: 6
                 }]
             },
@@ -564,18 +555,14 @@ function initCharts() {
     const peakCtx = document.getElementById('peakChart')?.getContext('2d');
     if (peakCtx) {
         charts.peak = new Chart(peakCtx, {
-            type: 'line',
+            type: 'bar',
             data: {
-                labels: ['12 AM', '4 AM', '8 AM', '12 PM', '4 PM', '8 PM'],
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6'],
                 datasets: [{
-                    label: 'Average Load (kW)',
-                    data: [80, 65, 120, 150, 187, 140],
-                    borderColor: '#f59e0b',
-                    backgroundColor: 'rgba(245,158,11,0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 4,
-                    pointHoverRadius: 6
+                    label: 'Weekly Consumption (kWh)',
+                    data: [0, 0, 0, 0, 0, 0],
+                    backgroundColor: '#f59e0b',
+                    borderRadius: 6
                 }]
             },
             options: {
@@ -584,14 +571,14 @@ function initCharts() {
                     legend: { display: false },
                     tooltip: {
                         callbacks: {
-                            label: ctx => `${ctx.parsed.y} kW at ${ctx.label}`
+                            label: ctx => `${ctx.parsed.y.toLocaleString()} kWh`
                         }
                     }
                 },
                 scales: {
                     y: {
                         beginAtZero: true,
-                        title: { display: true, text: 'kW' },
+                        title: { display: true, text: 'kWh' },
                         grid: { color: 'rgba(0,0,0,0.05)' }
                     },
                     x: { grid: { display: false } }
@@ -605,10 +592,10 @@ function initCharts() {
         charts.efficiency = new Chart(efficiencyCtx, {
             type: 'doughnut',
             data: {
-                labels: ['Efficient', 'Moderate', 'Needs Improvement'],
+                labels: ['Class Days', 'No-Class Days'],
                 datasets: [{
-                    data: [65, 25, 10],
-                    backgroundColor: ['#10b981', '#fbbf24', '#ef4444'],
+                    data: [50, 50],
+                    backgroundColor: ['#10b981', '#f59e0b'],
                     borderWidth: 0
                 }]
             },

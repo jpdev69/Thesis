@@ -94,20 +94,20 @@ function currentPageName() {
     return window.location.pathname.split('/').pop() || 'dashboard.html';
 }
 
-function redirectToLogin() {
+function redirectToLanding() {
     const page = currentPageName();
     if (page !== 'login.html' && page !== 'admin.html') {
         if (ALLOWED_RETURN_PAGES.has(page)) {
             localStorage.setItem(AUTH_KEYS.returnTo, page);
         }
-        window.location.href = 'login.html';
+        window.location.href = 'index.html';
     }
 }
 
 function checkSimpleAuth() {
     const current = getCurrentUser();
     if (!current) {
-        redirectToLogin();
+        redirectToLanding();
         return;
     }
 
@@ -117,7 +117,7 @@ function checkSimpleAuth() {
     if (!liveUser || liveUser.status !== 'approved') {
         alert('Your access permissions have been modified or revoked by the Administrator.');
         localStorage.removeItem(AUTH_KEYS.currentUser);
-        redirectToLogin();
+        redirectToLanding();
         return;
     }
 
@@ -161,7 +161,29 @@ function checkSimpleAuth() {
 function simpleLogout() {
     localStorage.removeItem(AUTH_KEYS.currentUser);
     localStorage.removeItem(AUTH_KEYS.returnTo);
-    window.location.href = 'login.html';
+    window.location.href = 'index.html';
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const expandBtn = document.getElementById('sidebarExpandBtn');
+    if (sidebar) {
+        sidebar.classList.toggle('minimized');
+    }
+    if (expandBtn) {
+        expandBtn.classList.toggle('active');
+    }
+    const isMinimized = sidebar ? sidebar.classList.contains('minimized') : false;
+    localStorage.setItem('sidebarMinimized', isMinimized);
+}
+
+function loadSidebarState() {
+    const sidebar = document.getElementById('sidebar');
+    const expandBtn = document.getElementById('sidebarExpandBtn');
+    if (localStorage.getItem('sidebarMinimized') === 'true' && sidebar) {
+        sidebar.classList.add('minimized');
+        if (expandBtn) expandBtn.classList.add('active');
+    }
 }
 
 function loadTheme() {
@@ -222,6 +244,7 @@ function removeTechnicalNavEntries() {
 
 document.addEventListener('DOMContentLoaded', () => {
     loadTheme();
+    loadSidebarState();
     checkSimpleAuth();
     removeTechnicalNavEntries();
 });

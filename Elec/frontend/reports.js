@@ -122,11 +122,11 @@ function getDefaultScheduledReports() {
         },
         {
             id: 3,
-            name: 'Monthly Sustainability',
+            name: 'Monthly Consumption',
             frequency: 'Monthly on 1st',
             recipients: 'management@energy.ai',
             nextRun: 'Aug 1, 2026',
-            active: true
+            active: false
         }
     ];
 }
@@ -144,7 +144,7 @@ function generateReport(template) {
     const history = getInteractionHistory();
     
     if (!modelData || !modelData.trained) {
-        alert('No trained model available. Please train a model first on the Dashboard.');
+        alert('No trained model available. Model training is an administrator task in the Models workspace.');
         return;
     }
     
@@ -165,7 +165,7 @@ function openReportGenerator() {
     const modelData = loadSharedForecastState();
     
     if (!modelData || !modelData.trained) {
-        alert('No trained model available.\n\nPlease go to the Dashboard and:\n1. Train a model with your data\n2. Generate a forecast\n3. Return here to create reports');
+        alert('No trained model available.\n\nModel training is an administrator task in the Models workspace.');
         return;
     }
     
@@ -174,20 +174,23 @@ function openReportGenerator() {
         'Weekly Report', 
         'Monthly Analysis',
         'Cost Analysis',
-        'Building Comparison',
-        'Sustainability Report'
+        'Consumption Summary'
     ];
     
     const choice = prompt(
-        'Select a report template to generate:\n\n' +
+        'Select a report template to preview:\n\n' +
         templates.map((t, i) => `${i + 1}. ${t}`).join('\n') +
-        '\n\nEnter number (1-6):'
+        '\n\nEnter number (1-5):'
     );
     
     const index = parseInt(choice) - 1;
     if (index >= 0 && index < templates.length) {
         generateReport(templates[index]);
     }
+}
+
+function previewReport(name) {
+    alert(`Previewing ${name}...\n\nReport previews are a demonstration in this thesis build. PDF generation and delivery are not implemented.`);
 }
 
 // ============================================================
@@ -214,7 +217,7 @@ function renderRecentReports() {
                     <polyline points="14 2 14 8 20 8"/>
                 </svg>
                 <p style="font-size: 16px; margin-bottom: 8px;">No reports generated yet</p>
-                <p style="font-size: 14px;">Train a model and generate forecasts on the Dashboard to see reports here.</p>
+                <p style="font-size: 14px;">Generate a forecast on the Dashboard to see sample report records here. Report generation itself is a demonstration placeholder.</p>
             </div>
         `;
         return;
@@ -263,7 +266,7 @@ function renderRecentReports() {
                     <div style="font-size: 13px; color: var(--text-secondary);">Generated on ${dateStr} • ${size}</div>
                     <div style="font-size: 12px; color: var(--text-tertiary); margin-top: 4px;">${details}</div>
                 </div>
-                <button class="btn-secondary" onclick="downloadReport(${interaction.id})">Download PDF</button>
+                <button class="btn-secondary" onclick="previewReport('${title}')">Preview</button>
             </div>
         `;
     });
@@ -312,8 +315,8 @@ function renderReportTemplates() {
         { name: 'Weekly Report', icon: 'calendar', description: 'Weekly trends and insights' },
         { name: 'Monthly Analysis', icon: 'trending-up', description: 'Monthly performance analysis' },
         { name: 'Cost Analysis', icon: 'dollar-sign', description: 'Cost breakdown and savings' },
-        { name: 'Building Comparison', icon: 'home', description: 'Compare building performance' },
-        { name: 'Sustainability Report', icon: 'leaf', description: 'Environmental impact report' }
+        { name: 'Consumption Summary', icon: 'activity', description: 'Daily consumption summary' },
+        { name: 'Cost Analysis', icon: 'dollar-sign', description: 'Estimated cost using reference rate' }
     ];
     
     let html = '<div style="display: flex; flex-direction: column; gap: 12px;">';
