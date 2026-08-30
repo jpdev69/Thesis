@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
-    <title>EnergyAI — Client Forecast Dashboard</title>
-    <meta name="description" content="AI-powered campus electricity forecasting with weather-aware predictions, anomaly detection, and cost optimization.">
+    <title>EnergyAI — Forecast Dashboard</title>
+    <meta name="description" content="Daily campus electricity forecasts using the EnergyAI attention-LSTM and RBF-SVR cascade, with cost estimates and statistical forecast flags.">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -116,7 +116,7 @@
         <header class="header">
             <div class="header-left">
                 <h1>Energy Forecasting Dashboard</h1>
-                <p class="subtitle">AI-powered campus energy analytics with confidence intervals & anomaly detection</p>
+                <p class="subtitle">Daily campus consumption forecasts with weather and schedule context, cost estimates, and statistical forecast flags</p>
             </div>
             <div class="header-right">
                 <button class="btn-icon" id="themeToggle" onclick="toggleTheme()">
@@ -171,8 +171,8 @@
                     </svg>
                 </div>
                 <div class="stat-content">
-                    <div class="stat-label">Avg Daily Load</div>
-                    <div class="stat-value" id="currentLoadValue">— kW</div>
+                    <div class="stat-label">Avg Daily Forecast</div>
+                    <div class="stat-value" id="currentLoadValue">— kWh/day</div>
                     <div class="stat-change" id="currentLoadSub">Awaiting forecast</div>
                 </div>
             </div>
@@ -184,9 +184,9 @@
                     </svg>
                 </div>
                 <div class="stat-content">
-                    <div class="stat-label">Forecast Confidence</div>
+                    <div class="stat-label">Validation MAPE</div>
                     <div class="stat-value" id="forecastAccuracyValue">—</div>
-                    <div class="stat-change" id="forecastAccuracySub">Based on the latest client forecast</div>
+                    <div class="stat-change" id="forecastAccuracySub">From the latest model metrics</div>
                 </div>
             </div>
 
@@ -283,13 +283,13 @@
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
                             </div>
                             <div class="savings-content">
-                                <div class="savings-label">95% Confidence Range</div>
+                                <div class="savings-label">Indicative Range</div>
                                 <div class="savings-value confidence-range" id="confidenceRange">—</div>
                             </div>
                         </div>
                     </div>
                     <div class="savings-note">
-                        Includes 10% contingency buffer • Confidence intervals from 100% Integrated Hybrid LSTM-SVM predictions
+                        Range reflects uncalibrated model uncertainty, not a true 95% confidence interval.
                     </div>
                 </div>
             </div>
@@ -312,14 +312,14 @@
                 </div>
             </div>
 
-            <!-- Peak Load Analysis -->
+            <!-- Peak Day Analysis -->
             <div class="card peak-card">
                 <div class="card-header">
-                    <h3>Peak Load Analysis</h3>
+                    <h3>Peak Day Analysis</h3>
                 </div>
                 <div class="card-body">
                     <div id="peakInfo" class="peak-grid">
-                        <div class="peak-empty">Generate a forecast to see peak load analysis</div>
+                        <div class="peak-empty">Generate a forecast to see peak day analysis</div>
                     </div>
                 </div>
             </div>
@@ -339,7 +339,7 @@
                         <span class="legend-item"><span class="legend-dot green"></span> Class Day</span>
                         <span class="legend-item"><span class="legend-dot orange"></span> No Class</span>
                         <span class="legend-item"><span class="legend-dot red"></span> Peak Day</span>
-                        <span class="legend-item"><span class="legend-dot band"></span> 95% Confidence</span>
+                        <span class="legend-item"><span class="legend-dot band"></span> Indicative Range</span>
                     </div>
                     <canvas id="forecastChart"></canvas>
                 </div>

@@ -1,5 +1,5 @@
 // ============================================================
-// EnergyAI Dashboard - Hybrid LSTM-SVM Forecasting v3.0
+// EnergyAI Dashboard - Attention-LSTM + RBF-SVR Forecasting
 // Live API forecasts • Confidence bands • Anomaly detection
 // Export • Peak load analysis
 // ============================================================
@@ -612,7 +612,7 @@ function initializeForecastContext() {
 }
 
 // ============================================================
-//  DAILY FORECAST (live hybrid LSTM-SVM API first, JS demo fallback)
+//  DAILY FORECAST (attention-LSTM + RBF-SVR API first, JS demo fallback)
 // ============================================================
 
 async function fetchOpsForecast(days) {
@@ -690,7 +690,7 @@ function renderLocalDailyForecast(days) {
             peakAnalysis: forecastContext.estimatePeakLoad(result.predictions),
             dates: null,
             sourceLabel: 'client-side demo model',
-            accuracyPercent: null,
+            validationMape: null,
             anomalies: forecastContext.detectAnomalies(result.predictions, 1.5)
         };
 
@@ -738,10 +738,10 @@ function renderOpsForecast(apiResult, days) {
         futureSchedule,
         peakAnalysis,
         dates: f.dates || null,
-        sourceLabel: 'hybrid LSTM-SVM (operational model'
+        sourceLabel: 'attention-LSTM + RBF-SVR cascade (operational model'
             + (ops.model_trained_at ? ', trained ' + ops.model_trained_at.split('T')[0] : '')
             + ')',
-        accuracyPercent: Number.isFinite(validationMape) ? (100 - validationMape) : null,
+        validationMape: Number.isFinite(validationMape) ? validationMape : null,
         anomalies: (f.anomaly_flags || []).map((flag, i) => flag ? { index: i } : null).filter(Boolean)
     };
 
@@ -797,14 +797,14 @@ function renderForecastResult(ctx, days) {
     const avgDaily = totalConsumption / days;
 
     // Update client-facing stat cards
-    updateStatCard('currentLoad', `${avgDaily.toFixed(2)} kW`, `Avg daily for ${days}-day forecast`);
-    if (ctx.accuracyPercent != null) {
-        updateStatCard('forecastAccuracy', `${ctx.accuracyPercent.toFixed(2)}%`, 'Validation accuracy (100 - MAPE)');
+    updateStatCard('currentLoad', `${avgDaily.toFixed(2)} kWh/day`, `Avg daily for ${days}-day forecast`);
+    if (ctx.validationMape != null) {
+        updateStatCard('forecastAccuracy', `${ctx.validationMape.toFixed(2)}%`, 'Model validation MAPE');
     } else {
-        updateStatCard('forecastAccuracy', `${Math.max(90, 100 - Math.min(20, (totalConsumption / Math.max(days, 1)) / 50)).toFixed(2)}%`, 'Forecast confidence for planning');
+        updateStatCard('forecastAccuracy', '—', 'Model validation MAPE');
     }
     updateStatCard('forecastTotal', `₱${fmt(totalCost)}`, `Total ${days}-day forecast cost`);
-    updateStatCard('modelStatus', 'Ready', 'Hybrid LSTM-SVM forecast online');
+    updateStatCard('modelStatus', 'Ready', 'EnergyAI forecast service online');
 
     lastForecastResult = { predictions, lower, upper, futureWeather, futureSchedule, peakAnalysis, dates: ctx.dates };
 
@@ -823,7 +823,7 @@ function renderForecastResult(ctx, days) {
     updateDailyChart(predictions, futureWeather, futureSchedule, lower, upper, peakAnalysis, ctx.dates);
 
     logStatus(`${days}-day forecast complete — Total: ${totalConsumption.toFixed(2)} kWh (₱${fmt(totalCost)})`, 'success');
-    logStatus(`95% CI: ₱${fmt(totalLower)} — ₱${fmt(totalUpper)}`, 'success');
+    logStatus(`Indicative range: ₱${fmt(totalLower)} — ₱${fmt(totalUpper)}`, 'success');
     logStatus(`Peak: ${peakAnalysis.peakValue.toFixed(2)} kWh (Day ${peakAnalysis.peakDayIndex + 1}) | Load factor: ${(peakAnalysis.loadFactor * 100).toFixed(2)}%`, 'success');
 
 }
@@ -1072,8 +1072,8 @@ window.addEventListener('load', () => {
     loadSidebarState();
     initChart();
     hydrateSharedModelFromApi().finally(() => {
-        logStatus('Dashboard initialized — EnergyAI v3.0', 'success');
-        logStatus('Live hybrid LSTM-SVM forecasts with confidence intervals, anomaly detection, and peak load analysis', 'success');
+        logStatus('Dashboard initialized — EnergyAI', 'success');
+        logStatus('Attention-LSTM + RBF-SVR cascade with cost translation and statistical forecast flags', 'success');
     });
 });
 

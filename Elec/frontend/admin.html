@@ -6,14 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Portal EnergyAI Engine</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script type="importmap">
-        {
-          "imports": {
-            "three": "https://unpkg.com/three@0.143.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.143.0/examples/jsm/"
-          }
-        }
-    </script>
+
     <style>
         :root {
             --bg-dark: #02160c;
@@ -71,30 +64,7 @@
             display: block;
             z-index: 0;
             pointer-events: none;
-        }
-
-        .ambient-orb {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(80px);
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        .orb-1 {
-            width: 300px;
-            height: 300px;
-            background: rgba(16, 185, 129, 0.2);
-            top: -50px;
-            left: -50px;
-        }
-
-        .orb-2 {
-            width: 350px;
-            height: 350px;
-            background: rgba(6, 182, 212, 0.15);
-            bottom: -80px;
-            right: -80px;
+            opacity: 0.6;
         }
 
         /* Admin Login Screen Card */
@@ -233,6 +203,9 @@
 
         .sidebar-header {
             margin-bottom: 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .sidebar-header .logo {
@@ -279,6 +252,77 @@
             display: flex;
             align-items: center;
             gap: 12px;
+        }
+
+        .sidebar-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .sidebar-control-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: color 0.2s ease, opacity 0.2s ease;
+            padding: 0;
+        }
+
+        .sidebar-control-btn:hover {
+            color: var(--text-primary);
+            opacity: 0.8;
+        }
+
+        .sidebar-expand-btn {
+            position: fixed;
+            left: -50px;
+            top: 24px;
+            width: 40px;
+            height: 40px;
+            background: rgba(2, 22, 12, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 0 10px 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 999;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-expand-btn:hover {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--text-primary);
+            border-color: rgba(52, 232, 154, 0.4);
+        }
+
+        .sidebar-expand-btn.active {
+            left: 0;
+        }
+
+        /* Sidebar Minimized State */
+        #adminDashboardLayout.sidebar-minimized {
+            grid-template-columns: 0 1fr;
+        }
+
+        #adminDashboardLayout.sidebar-minimized .sidebar {
+            overflow: hidden;
+            visibility: hidden;
+        }
+
+        #adminDashboardLayout.sidebar-minimized .sidebar-expand-btn {
+            left: 0;
+        }
+
+        #adminDashboardLayout.sidebar-minimized .main-content {
+            padding-left: 56px;
         }
 
         .avatar {
@@ -528,8 +572,6 @@
 
 <body class="is-login-mode">
     <canvas id="scene"></canvas>
-    <div class="ambient-orb orb-1"></div>
-    <div class="ambient-orb orb-2"></div>
 
     <!-- Admin Login Screen -->
     <div id="adminLoginScreen" class="admin-login-box">
@@ -557,20 +599,29 @@
         </form>
 
         <p style="text-align: center; margin-top: 20px; font-size: 13px;">
-            <a href="login.html" style="color: #10b981; text-decoration: none; font-weight: 500;">← Back to User
-                Login</a>
+            <a href="index.html" style="color: #10b981; text-decoration: none; font-weight: 500;">← Back to Public
+                Home</a>
         </p>
     </div>
 
     <!-- Admin Dashboard Container -->
     <div id="adminDashboardLayout" style="display: none;">
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                     </svg>
                     <span>EnergyAI Admin</span>
+                </div>
+                <div class="sidebar-controls">
+                    <button class="sidebar-control-btn" onclick="toggleSidebar()" title="Toggle sidebar">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="6" x2="21" y2="6"/>
+                            <line x1="3" y1="12" x2="21" y2="12"/>
+                            <line x1="3" y1="18" x2="21" y2="18"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
 
@@ -600,6 +651,15 @@
                 </div>
             </div>
         </aside>
+
+        <!-- Expand Button (shown when sidebar is minimized) -->
+        <button class="sidebar-expand-btn" id="sidebarExpandBtn" onclick="toggleSidebar()" title="Expand sidebar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+        </button>
 
         <main class="main-content">
             <header class="header">
@@ -659,6 +719,25 @@
         const ADMIN_PASS = 'admin123';
         const ADMIN_EMAIL = 'admin@energy.ai';
         let currentFilter = 'all';
+
+        function toggleSidebar() {
+            const layout = document.getElementById('adminDashboardLayout');
+            const expandBtn = document.getElementById('sidebarExpandBtn');
+            if (!layout) return;
+            layout.classList.toggle('sidebar-minimized');
+            if (expandBtn) expandBtn.classList.toggle('active');
+            const isMinimized = layout.classList.contains('sidebar-minimized');
+            localStorage.setItem('adminSidebarMinimized', isMinimized);
+        }
+
+        function loadSidebarState() {
+            const layout = document.getElementById('adminDashboardLayout');
+            const expandBtn = document.getElementById('sidebarExpandBtn');
+            if (localStorage.getItem('adminSidebarMinimized') === 'true' && layout) {
+                layout.classList.add('sidebar-minimized');
+                if (expandBtn) expandBtn.classList.add('active');
+            }
+        }
 
         function safeReadJson(key, fallback) {
             try {
@@ -735,6 +814,7 @@
                 document.body.classList.add('is-dashboard-mode');
                 document.getElementById('adminLoginScreen').style.display = 'none';
                 document.getElementById('adminDashboardLayout').style.display = 'grid';
+                loadSidebarState();
                 seedDefaultAdminDataIfEmpty();
                 loadAdminData();
             } else {
@@ -919,403 +999,74 @@
         // Initialize
         checkAdminSession();
     </script>
-    <script type="module">
-        import * as THREE from 'three';
-        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-        import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-        import { GammaCorrectionShader } from 'three/addons/shaders/GammaCorrectionShader.js';
-        import { CopyShader } from 'three/addons/shaders/CopyShader.js';
+    <script>
+        (() => {
+            const canvas = document.getElementById('scene');
+            const context = canvas.getContext('2d', { alpha: true });
+            const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+            let width = 0;
+            let height = 0;
+            let animationFrame = 0;
+            let startTime = performance.now();
 
-        const bgColor = '#02160c';
-        const flameColor = '#0aff7f';
-        const flameColor2 = '#aef0c0';
-        const flameAmt = 0.2;
-        const atmoColor = '#7affbf';
-        const atmoCount = 300;
-        const atmoSize = 24;
-        const atmoSpeed = 1.0;
-        const colorLow = '#02160c';
-        const colorHigh = '#34e89a';
-        const opacity = 0.38;
-        const pointSize = 5.5;
-        const brightness = 0.6;
-        const waveHeight = 3;
-        const flow = 1;
-        const tilt = 0;
-        const scale = 0.275;
-        const scrollRise = 1.0;
-        const camStartY = 2.2, camStartZ = 8.0;
-        const camEndY = 0.8, camEndZ = -2;
-        const lookStartZ = -8.0, lookEndZ = -16;
-        const parallax = 1.2;
-        const pointerRadius = 7.0;
-        const pointerStrength = 0.9;
-
-        const Lerp = (a, b, t) => a + (b - a) * t;
-        const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-        function hexToVec3(hex) {
-            const n = parseInt(hex.slice(1), 16);
-            return new THREE.Vector3(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
-        }
-
-        const LAYERS = { NONE: 0, TORUS_SCENE: 1, BLOOM_SCENE: 2, ENTIRE_SCENE: 3 };
-
-        const canvas = document.querySelector('#scene');
-        const renderer = new THREE.WebGL1Renderer({ canvas, antialias: true });
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.VSMShadowMap;
-
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x000000);
-        scene.fog = new THREE.Fog(0x000000, 0, 15);
-
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 400);
-        camera.position.set(0, camStartY, camStartZ);
-        camera.layers.enable(LAYERS.TORUS_SCENE);
-        camera.layers.enable(LAYERS.BLOOM_SCENE);
-        camera.layers.enable(LAYERS.ENTIRE_SCENE);
-        scene.add(camera);
-
-        const dummyTexture = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
-        dummyTexture.needsUpdate = true;
-
-        const FinalPassShader = {
-            uniforms: {
-                iTime: { value: 0 },
-                tDiffuse: { value: null },
-                torusTexture: { value: null },
-                bloomTexture: { value: null },
-                haloTexture: { value: dummyTexture },
-                uBg: { value: hexToVec3(bgColor) },
-                uFlameA: { value: hexToVec3(flameColor) },
-                uFlameB: { value: hexToVec3(flameColor2) },
-                uFlameAmt: { value: flameAmt }
-            },
-            vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position, 1.0); }`,
-            fragmentShader: `
-            uniform float iTime; uniform sampler2D tDiffuse; uniform sampler2D bloomTexture; uniform sampler2D torusTexture; uniform sampler2D haloTexture;
-            uniform vec3 uBg; uniform vec3 uFlameA; uniform vec3 uFlameB; uniform float uFlameAmt;
-            varying vec2 vUv;
-            vec3 warp3d(vec3 pos, float t){ float curv=.8,a=1.9,b=0.7; pos*=2.;
-              pos.x+=curv*sin(t+a*pos.y)+t*b; pos.y+=curv*cos(t+a*pos.x);
-              pos.y+=curv*sin(t+a*pos.z)+t*b; pos.z+=curv*cos(t+a*pos.y);
-              pos.z+=curv*sin(t+a*pos.x)+t*b; pos.x+=curv*cos(t+a*pos.z);
-              return 0.5+0.5*cos(pos.xyz+vec3(1,2,4)); }
-            void main(){
-              vec2 uv = 2.*vUv - 1.;
-              vec3 w = pow(warp3d(vec3(uv.x, sin(uv.y), uv.y), iTime*1.5), vec3(1.5));
-              vec3 flame = 1.5*uFlameA*w.x; flame*=w.y; flame += uFlameB*w.z;
-              flame *= smoothstep(0.25, 1., abs(uv.y));
-              float md = smoothstep(-0.7, 1., -uv.y*uv.x); flame *= md*md;
-              vec3 bg = uBg * (1.0 - 0.4 * length(uv));
-              vec3 halo = texture2D(haloTexture, vUv).xyz;
-              gl_FragColor = vec4(bg + flame*uFlameAmt + texture2D(bloomTexture, vUv).xyz + texture2D(torusTexture, vUv).xyz + texture2D(tDiffuse, vUv).xyz + halo, 1.);
+            function resize() {
+                const ratio = Math.min(window.devicePixelRatio || 1, 1.5);
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas.width = Math.round(width * ratio);
+                canvas.height = Math.round(height * ratio);
+                canvas.style.width = `${width}px`;
+                canvas.style.height = `${height}px`;
+                context.setTransform(ratio, 0, 0, ratio, 0, 0);
             }
-          `
-        };
 
-        const renderPass = new RenderPass(scene, camera);
+            function draw(timestamp) {
+                const time = reducedMotion.matches ? 0 : (timestamp - startTime) / 1000;
+                context.clearRect(0, 0, width, height);
 
-        const torusComposer = new EffectComposer(renderer);
-        torusComposer.renderToScreen = false;
-        torusComposer.addPass(renderPass);
-        torusComposer.addPass(new ShaderPass(GammaCorrectionShader));
-        torusComposer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.22, 0.2, 0));
-        torusComposer.addPass(new ShaderPass(CopyShader));
+                const gradient = context.createLinearGradient(0, height * 0.35, 0, height);
+                gradient.addColorStop(0, 'rgba(16, 185, 129, 0)');
+                gradient.addColorStop(0.55, 'rgba(16, 185, 129, 0.14)');
+                gradient.addColorStop(1, 'rgba(6, 182, 212, 0)');
 
-        const bloomComposer = new EffectComposer(renderer);
-        bloomComposer.renderToScreen = false;
-        bloomComposer.addPass(renderPass);
-        bloomComposer.addPass(new ShaderPass(GammaCorrectionShader));
-        bloomComposer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.7, 0.35, 0.1));
-        bloomComposer.addPass(new ShaderPass(CopyShader));
+                context.lineWidth = 1;
+                context.strokeStyle = gradient;
+                const lines = width < 700 ? 10 : 16;
+                const points = width < 700 ? 28 : 44;
 
-        const finalShaderPass = new ShaderPass(FinalPassShader);
-        finalShaderPass.uniforms.torusTexture.value = torusComposer.renderTarget2.texture;
-        finalShaderPass.uniforms.bloomTexture.value = bloomComposer.renderTarget2.texture;
+                for (let row = 0; row < lines; row += 1) {
+                    context.beginPath();
+                    for (let point = 0; point <= points; point += 1) {
+                        const x = (point / points) * width;
+                        const baseY = height * 0.5 + row * (height * 0.03);
+                        const wave = Math.sin(point * 0.34 + row * 0.42 + time * 0.32) * (9 + row * 0.6);
+                        const swell = Math.sin(point * 0.1 - time * 0.18) * 16;
+                        const y = baseY + wave + swell;
+                        if (point === 0) context.moveTo(x, y);
+                        else context.lineTo(x, y);
+                    }
+                    context.stroke();
+                }
 
-        const finalComposer = new EffectComposer(renderer);
-        finalComposer.addPass(renderPass);
-        finalComposer.addPass(finalShaderPass);
-
-        const group = new THREE.Group();
-        group.rotation.x = -tilt;
-        scene.add(group);
-
-        const atmoGeom = new THREE.BufferGeometry();
-        const atmoPos = new Float32Array(atmoCount * 3);
-        const atmoSeed = new Float32Array(atmoCount);
-        for (let i = 0; i < atmoCount; i++) {
-            atmoPos[i * 3] = (Math.random() - 0.5) * 30;
-            atmoPos[i * 3 + 1] = (Math.random() - 0.5) * 16;
-            atmoPos[i * 3 + 2] = (Math.random() - 0.5) * 20;
-            atmoSeed[i] = Math.random() * 100;
-        }
-        atmoGeom.setAttribute('position', new THREE.BufferAttribute(atmoPos, 3));
-        atmoGeom.setAttribute('aSeed', new THREE.BufferAttribute(atmoSeed, 1));
-
-        const atmoMat = new THREE.ShaderMaterial({
-            transparent: true,
-            depthWrite: false,
-            blending: THREE.AdditiveBlending,
-            uniforms: {
-                uTime: { value: 0 },
-                uColor: { value: hexToVec3(atmoColor) },
-                uSize: { value: atmoSize },
-                uSpeed: { value: atmoSpeed }
-            },
-            vertexShader: `
-            uniform float uTime; uniform float uSize; uniform float uSpeed;
-            attribute float aSeed; varying float vAlpha;
-            void main() {
-              vec3 p = position;
-              float t = uTime * uSpeed * 0.3 + aSeed;
-              p.x += sin(t * 0.7) * 0.4;
-              p.y += cos(t * 0.5) * 0.4;
-              p.z += sin(t * 0.9) * 0.4;
-              vec4 mv = viewMatrix * vec4(p, 1.0);
-              vAlpha = 0.3 + 0.3 * sin(t * 1.5);
-              gl_PointSize = uSize * (6.0 / -mv.z);
-              gl_Position = projectionMatrix * mv;
+                if (!reducedMotion.matches && !document.hidden) {
+                    animationFrame = requestAnimationFrame(draw);
+                }
             }
-          `,
-            fragmentShader: `
-            uniform vec3 uColor; varying float vAlpha;
-            void main() {
-              float d = length(gl_PointCoord - 0.5);
-              if (d > 0.5) discard;
-              float a = smoothstep(0.5, 0.0, d) * vAlpha;
-              gl_FragColor = vec4(uColor, a * 0.35);
+
+            function restart() {
+                cancelAnimationFrame(animationFrame);
+                draw(performance.now());
             }
-          `
-        });
-        const atmoPoints = new THREE.Points(atmoGeom, atmoMat);
-        atmoPoints.layers.enable(LAYERS.ENTIRE_SCENE);
-        scene.add(atmoPoints);
 
-        const SNOISE = `
-          vec3 mod289(vec3 x){return x - floor(x * (1.0 / 289.0)) * 289.0;}
-          vec4 mod289(vec4 x){return x - floor(x * (1.0 / 289.0)) * 289.0;}
-          vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);}
-          vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
-          float snoise(vec3 v){
-            const vec2 C = vec2(1.0/6.0, 1.0/3.0);
-            const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
-            vec3 i  = floor(v + dot(v, C.yyy));
-            vec3 x0 = v - i + dot(i, C.xxx);
-            vec3 g = step(x0.yzx, x0.xyz);
-            vec3 l = 1.0 - g;
-            vec3 i1 = min(g.xyz, l.zxy);
-            vec3 i2 = max(g.xyz, l.zxy);
-            vec3 x1 = x0 - i1 + C.xxx;
-            vec3 x2 = x0 - i2 + C.yyy;
-            vec3 x3 = x0 - D.yyy;
-            i = mod289(i);
-            vec4 p = permute(permute(permute(
-                      i.z + vec4(0.0, i1.z, i2.z, 1.0))
-                    + i.y + vec4(0.0, i1.y, i2.y, 1.0))
-                    + i.x + vec4(0.0, i1.x, i2.x, 1.0));
-            float n_ = 0.142857142857;
-            vec3 ns = n_ * D.wyz - D.xzx;
-            vec4 j = p - 49.0 * floor(p * ns.z);
-            vec4 x_ = floor(j * ns.z);
-            vec4 y_ = floor(j - 7.0 * x_);
-            vec4 x = x_ *ns.x + ns.yyyy;
-            vec4 y = y_ *ns.x + ns.yyyy;
-            vec4 h = 1.0 - abs(x) - abs(y);
-            vec4 b0 = vec4(x.xy, y.xy);
-            vec4 b1 = vec4(x.zw, y.zw);
-            vec4 s0 = floor(b0)*2.0 + 1.0; vec4 s1 = floor(b1)*2.0 + 1.0; vec4 sh = -step(h, vec4(0.0));
-            vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy; vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
-            vec3 p0 = vec3(a0.xy,h.x); vec3 p1 = vec3(a0.zw,h.y); vec3 p2 = vec3(a1.xy,h.z); vec3 p3 = vec3(a1.zw,h.w);
-            vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
-            p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
-            vec4 m = max(0.5 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0); m = m * m;
-            return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
-          }
-        `;
-
-        const pointsGeom = new THREE.SphereGeometry(4.2, 200, 600);
-        const pointsUniforms = {
-            uTime: { value: 0 },
-            uStream: { value: 0 },
-            uAppear: { value: 0 },
-            uColLow: { value: hexToVec3(colorLow) },
-            uColHigh: { value: hexToVec3(colorHigh) },
-            uOpacity: { value: opacity },
-            uSize: { value: pointSize },
-            uBrightness: { value: brightness },
-            uWaveHeight: { value: waveHeight },
-            uFlow: { value: flow },
-            uScale: { value: scale },
-            uCursor: { value: new THREE.Vector3() },
-            uRepelRadius: { value: pointerRadius },
-            uRepelStrength: { value: pointerStrength },
-            uActivity: { value: 0 }
-        };
-
-        const pointsMat = new THREE.ShaderMaterial({
-            transparent: true,
-            depthWrite: false,
-            blending: THREE.AdditiveBlending,
-            uniforms: pointsUniforms,
-            vertexShader: `
-            uniform float uTime; uniform float uStream; uniform float uSize; uniform float uWaveHeight; uniform float uFlow; uniform float uScale;
-            uniform vec3 uColLow; uniform vec3 uColHigh;
-            uniform vec3 uCursor; uniform float uRepelRadius; uniform float uRepelStrength; uniform float uActivity;
-            varying float vFade; varying vec3 vColor;
-            ${SNOISE}
-            void main() {
-              float rY = sqrt(max(0.001, 1.0 - (position.y / 4.2) * (position.y / 4.2)));
-              float normX = position.x / rY;
-              vec3 wp = vec3(normX * 18.0, 0.0, position.z * 55.0);
-              wp.x += position.y * 6.0;
-              float zc = wp.z + uStream;
-              float wn = snoise(vec3(wp.x * 0.08, zc * 0.08, uTime * 0.15 * uFlow)) * 2.0;
-              wn += snoise(vec3(wp.x * 0.16, zc * 0.16, uTime * 0.3 * uFlow)) * 0.8;
-              wp.y += wn * uWaveHeight;
-
-              vec3 finalPos = wp * uScale;
-              vec4 modelPosition = modelMatrix * vec4(finalPos, 1.0);
-              vec3 toP = modelPosition.xyz - uCursor;
-              float cd = length(toP);
-              float fall = smoothstep(uRepelRadius, 0.0, cd);
-              modelPosition.xyz += normalize(toP + vec3(0.0001)) * fall * uRepelStrength * uActivity;
-              vec4 mvPosition = viewMatrix * modelPosition;
-
-              float colMix = smoothstep(-3.0, 3.0, position.y + position.x * 0.5);
-              vColor = mix(uColLow, uColHigh, clamp(colMix, 0.0, 1.0));
-              vFade = 1.0;
-
-              gl_PointSize = uSize * (10.0 / -mvPosition.z);
-              gl_PointSize = max(gl_PointSize, 1.5);
-              gl_Position = projectionMatrix * mvPosition;
-            }
-          `,
-            fragmentShader: `
-            uniform float uOpacity; uniform float uBrightness; uniform float uAppear;
-            varying float vFade; varying vec3 vColor;
-            void main() {
-              vec2 xy = gl_PointCoord - 0.5;
-              float ll = length(xy);
-              if (ll > 0.5) discard;
-              float a = smoothstep(0.5, 0.1, ll);
-              gl_FragColor = vec4(vColor * uBrightness, vFade * a * uOpacity * uAppear);
-            }
-          `
-        });
-
-        const points = new THREE.Points(pointsGeom, pointsMat);
-        points.frustumCulled = false;
-        points.layers.enable(LAYERS.ENTIRE_SCENE);
-        group.add(points);
-
-        const mouse = new THREE.Vector2(0, 0);
-        const mouseTarget = new THREE.Vector2(0, 0);
-        let scrollCurrent = 0, scrollTarget = 0, scrollSmooth = 0;
-
-        window.addEventListener('mousemove', (e) => {
-            mouseTarget.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouseTarget.y = -(e.clientY / window.innerHeight) * 2 + 1;
-            onPointerMove(e.clientX, e.clientY);
-        });
-
-        const raycaster = new THREE.Raycaster();
-        const planeXZ = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-        const POINTER = { raw: new THREE.Vector2(), world: new THREE.Vector3(), lastMove: 0, active: false, activity: 0 };
-
-        function onPointerMove(cx, cy) {
-            POINTER.raw.x = (cx / window.innerWidth) * 2 - 1;
-            POINTER.raw.y = -(cy / window.innerHeight) * 2 + 1;
-            POINTER.lastMove = performance.now();
-            POINTER.active = true;
-        }
-
-        function updatePointerWorld() {
-            raycaster.setFromCamera(POINTER.raw, camera);
-            raycaster.ray.intersectPlane(planeXZ, POINTER.world);
-            const idle = (performance.now() - POINTER.lastMove) / 1000;
-            POINTER.activity += (((POINTER.active && idle < 3) ? 1 : 0) - POINTER.activity) * 0.06;
-        }
-
-        class FlowWaveScene {
-            constructor() {
-                this.stream = 0;
-                this.t0 = performance.now() / 1000;
-                this.appearStart = performance.now();
-            }
-            render(scrollVal, m) {
-                const scroll = 0;
-                const t = performance.now() / 1000;
-                const dt = Math.min(0.05, t - this.t0);
-                this.t0 = t;
-                pointsUniforms.uTime.value = t;
-
-                this.stream += dt * (flow * 2.0) * 4.0;
-                pointsUniforms.uStream.value = this.stream;
-                pointsUniforms.uWaveHeight.value = waveHeight * (1 + scroll * scrollRise);
-
-                const ea = Math.min(scroll / 0.35, 1.0);
-                const e = ea * ea * (3 - 2 * ea);
-                const camY = Lerp(camStartY, camEndY, e);
-                const camZ = Lerp(camStartZ, camEndZ, e);
-                camera.position.set(m.x * parallax, camY + m.y * parallax * 0.3, camZ);
-                camera.lookAt(m.x * parallax * 0.5, Lerp(0.0, 0.6, e), Lerp(lookStartZ, lookEndZ, e));
-                group.rotation.x = -tilt;
-                group.rotation.y = 0;
-                updatePointerWorld();
-
-                pointsUniforms.uCursor.value.copy(POINTER.world);
-                pointsUniforms.uActivity.value = POINTER.activity;
-                const elapsed = (performance.now() - this.appearStart) / 1000;
-                pointsUniforms.uAppear.value = Math.max(0, Math.min(1, (elapsed - 0.2) / 1.4));
-            }
-        }
-        const sceneObj = new FlowWaveScene();
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            scrollSmooth = Lerp(scrollSmooth, scrollTarget, 0.10);
-            scrollCurrent = Lerp(scrollCurrent, scrollSmooth, 0.06);
-            mouse.x = Lerp(mouse.x, mouseTarget.x, 0.06);
-            mouse.y = Lerp(mouse.y, mouseTarget.y, 0.06);
-
-            sceneObj.render(scrollCurrent, mouse);
-
-            camera.layers.set(LAYERS.TORUS_SCENE); torusComposer.render();
-            camera.layers.set(LAYERS.BLOOM_SCENE); bloomComposer.render();
-            camera.layers.set(LAYERS.ENTIRE_SCENE); finalComposer.render();
-        }
-
-        function onResize() {
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-            const dpr = window.devicePixelRatio;
-
-            renderer.setPixelRatio(dpr);
-            renderer.setSize(w, h, false);
-
-            camera.aspect = w / h;
-            camera.updateProjectionMatrix();
-
-            torusComposer.setPixelRatio(dpr);
-            torusComposer.setSize(w, h);
-            bloomComposer.setPixelRatio(dpr);
-            bloomComposer.setSize(w, h);
-            finalComposer.setPixelRatio(dpr);
-            finalComposer.setSize(w, h);
-
-            finalShaderPass.uniforms.tDiffuse.value = torusComposer.renderTarget2.texture;
-        }
-
-        window.addEventListener('resize', onResize);
-        onResize();
-        animate();
+            window.addEventListener('resize', () => {
+                resize();
+                restart();
+            }, { passive: true });
+            reducedMotion.addEventListener?.('change', restart);
+            document.addEventListener('visibilitychange', restart);
+            resize();
+            restart();
+        })();
     </script>
 </body>
 

@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="dashboard.css?v=4">
 </head>
 <body>
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -85,11 +85,29 @@
         </div>
     </aside>
 
+    <!-- Expand Button (shown when sidebar is minimized) -->
+    <button class="sidebar-expand-btn" id="sidebarExpandBtn" onclick="toggleSidebar()" title="Expand sidebar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+    </button>
+
     <main class="main-content">
+        <div class="card" style="margin-bottom: 20px;">
+            <div class="card-body" style="padding: 18px 20px;">
+                <p style="margin: 0; color: var(--text-secondary); line-height: 1.6;">
+                    Report generation is a demonstration placeholder in this thesis build. Scheduled delivery,
+                    PDF export, and automatic emails are not implemented; the buttons below open previews only.
+                </p>
+            </div>
+        </div>
+
         <header class="header">
             <div class="header-left">
                 <h1>Reports</h1>
-                <p class="subtitle">Generate and download energy reports</p>
+                <p class="subtitle">Preview report templates based on current model data</p>
             </div>
             <div class="header-right">
                 <button class="btn-icon" id="themeToggle" onclick="toggleTheme()">
@@ -131,9 +149,9 @@
                             </svg>
                             <div style="flex: 1;">
                                 <div style="font-weight: 600; margin-bottom: 4px;">Monthly Energy Report - July 2026</div>
-                                <div style="font-size: 13px; color: var(--text-secondary);">Generated on Jul 31, 2026 • 2.4 MB</div>
+                                <div style="font-size: 13px; color: var(--text-secondary);">Sample preview record • 2.4 MB</div>
                             </div>
-                            <button class="btn-secondary">Download PDF</button>
+                            <button class="btn-secondary" onclick="previewReport('Monthly Energy Report')">Preview</button>
                         </div>
                         <div style="display: flex; align-items: center; padding: 16px; background: var(--bg-tertiary); border-radius: 8px;">
                             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" style="margin-right: 16px;">
@@ -141,10 +159,10 @@
                                 <polyline points="14 2 14 8 20 8"/>
                             </svg>
                             <div style="flex: 1;">
-                                <div style="font-weight: 600; margin-bottom: 4px;">Savings Analysis Q2 2026</div>
-                                <div style="font-size: 13px; color: var(--text-secondary);">Generated on Jun 30, 2026 • 1.8 MB</div>
+                                <div style="font-weight: 600; margin-bottom: 4px;">Forecast Summary - Q2 2026</div>
+                                <div style="font-size: 13px; color: var(--text-secondary);">Sample preview record • 1.8 MB</div>
                             </div>
-                            <button class="btn-secondary">Download PDF</button>
+                            <button class="btn-secondary" onclick="previewReport('Forecast Summary')">Preview</button>
                         </div>
                         <div style="display: flex; align-items: center; padding: 16px; background: var(--bg-tertiary); border-radius: 8px;">
                             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" style="margin-right: 16px;">
@@ -152,10 +170,10 @@
                                 <polyline points="14 2 14 8 20 8"/>
                             </svg>
                             <div style="flex: 1;">
-                                <div style="font-weight: 600; margin-bottom: 4px;">Annual Sustainability Report 2026</div>
-                                <div style="font-size: 13px; color: var(--text-secondary);">Generated on Jul 15, 2026 • 5.2 MB</div>
+                                <div style="font-weight: 600; margin-bottom: 4px;">Consumption & Evaluation Report 2026</div>
+                                <div style="font-size: 13px; color: var(--text-secondary);">Sample preview record • 5.2 MB</div>
                             </div>
-                            <button class="btn-secondary">Download PDF</button>
+                            <button class="btn-secondary" onclick="previewReport('Consumption & Evaluation Report')">Preview</button>
                         </div>
                     </div>
                 </div>
@@ -201,7 +219,7 @@
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                             </svg>
-                            Building Comparison
+                            Consumption Summary
                         </button>
                     </div>
                 </div>
@@ -229,7 +247,7 @@
                                 <td style="padding: 16px;">Daily at 8:00 AM</td>
                                 <td style="padding: 16px;">admin@energy.ai</td>
                                 <td style="padding: 16px;">Tomorrow, 8:00 AM</td>
-                                <td style="padding: 16px;"><span class="badge success">Active</span></td>
+                                <td style="padding: 16px;"><span class="badge">Demo</span></td>
                                 <td style="padding: 16px;"><button class="btn-text">Edit</button></td>
                             </tr>
                             <tr style="border-bottom: 1px solid var(--border-color);">
@@ -237,15 +255,15 @@
                                 <td style="padding: 16px;">Weekly on Monday</td>
                                 <td style="padding: 16px;">team@energy.ai</td>
                                 <td style="padding: 16px;">Monday, 9:00 AM</td>
-                                <td style="padding: 16px;"><span class="badge success">Active</span></td>
+                                <td style="padding: 16px;"><span class="badge">Demo</span></td>
                                 <td style="padding: 16px;"><button class="btn-text">Edit</button></td>
                             </tr>
                             <tr>
-                                <td style="padding: 16px; font-weight: 500;">Monthly Sustainability</td>
+                                <td style="padding: 16px; font-weight: 500;">Monthly Consumption</td>
                                 <td style="padding: 16px;">Monthly on 1st</td>
                                 <td style="padding: 16px;">management@energy.ai</td>
-                                <td style="padding: 16px;">Feb 1, 2025</td>
-                                <td style="padding: 16px;"><span class="badge success">Active</span></td>
+                                <td style="padding: 16px;">Aug 1, 2026</td>
+                                <td style="padding: 16px;"><span class="badge">Demo</span></td>
                                 <td style="padding: 16px;"><button class="btn-text">Edit</button></td>
                             </tr>
                         </tbody>
