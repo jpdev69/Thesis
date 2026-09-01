@@ -222,13 +222,13 @@
 
                     <!-- Baseline Explanation -->
                     <div style="margin-top: 16px; padding: 12px; background: var(--bg-tertiary); border-radius: 6px; font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
-                        <strong style="color: var(--text-primary);">Baseline Methods:</strong>
+                        <strong style="color: var(--text-primary);">Baseline Methods (Evaluated on identical 80/20 Holdout Test Window):</strong>
                         <ul style="margin: 8px 0 0 0; padding-left: 20px;">
-                            <li><strong>Persistence (Naive):</strong> Predicts next value = current value (simplest forecast)</li>
-                            <li><strong>Historical Mean:</strong> Always predicts the historical average</li>
-                            <li><strong>Linear Regression:</strong> Simple linear trend model</li>
-<li><strong>ARIMA:</strong> Classical autoregressive integrated moving average baseline</li>
-                            <li><strong>Attention-LSTM + RBF-SVR:</strong> The trained cascade with weather & schedule features</li>
+                            <li><strong>Persistence (Naive):</strong> Predicts next value = current value (simplest benchmark)</li>
+                            <li><strong>Historical Mean:</strong> Predicts average of training period</li>
+                            <li><strong>Linear Regression:</strong> Fits linear trend on training split, evaluated on test split</li>
+                            <li><strong>ARIMA:</strong> Classical ARIMA benchmark trained on 80% split, evaluated on 20% holdout</li>
+                            <li><strong>Attention-LSTM + RBF-SVR:</strong> Active hybrid model trained on 80% split, evaluated on 20% holdout</li>
                         </ul>
                     </div>
                 </div>
@@ -533,63 +533,84 @@
         }
 
         function calculateBaselineMetrics(historicalData) {
-            if (!historicalData || !historicalData.consumption || historicalData.consumption.length < 2) {
+            if (!historicalData || !historicalData.consumption || historicalData.consumption.length < 30) {
                 return null;
             }
 
             const consumption = historicalData.consumption;
             const n = consumption.length;
 
-            // Persistence (Naive)
-            let persistenceSSE = 0;
-            for (let i = 1; i < n; i++) {
-                const error = consumption[i] - consumption[i - 1];
-                persistenceSSE += error * error;
-            }
-            const persistenceRMSE = Math.sqrt(persistenceSSE / (n - 1));
-            
-            let persistenceMAE = 0;
-            for (let i = 1; i < n; i++) {
-                persistenceMAE += Math.abs(consumption[i] - consumption[i - 1]);
-            }
-            persistenceMAE /= (n - 1);
+            // Use exact 80/20 train/test split matching model training
+            let splitIdx = Math.floor(n * 0.8);
+            splitIdx = Math.max(splitIdx, 21);
+            splitIdx = Math.min(splitIdx, n - 7);
 
-            // Historical Mean
-            const mean = consumption.reduce((a, b) => a + b) / n;
-            let meanSSE = 0, totalSS = 0, meanMAE = 0;
-            for (let i = 0; i < n; i++) {
-                const error = consumption[i] - mean;
+            const trainSeries = consumption.slice(0, splitIdx);
+            const testSeries = consumption.slice(splitIdx);
+            const m = testSeries.length;
+            if (m < 1) return null;
+
+            // Variance of test set (for R² calculation on holdout)
+            const testMean = testSeries.reduce((a, b) => a + b, 0) / m;
+            let totalSS = 0;
+            for (let i = 0; i < m; i++) {
+                const diff = testSeries[i] - testMean;
+                totalSS += diff * diff;
+            }
+            if (totalSS === 0) totalSS = 1e-6;
+
+            // 1. Persistence (Naive): predict day t using day t-1
+            let persistenceSSE = 0, persistenceMAE = 0;
+            for (let i = 0; i < m; i++) {
+                const actual = testSeries[i];
+                const prevIndex = splitIdx + i - 1;
+                const pred = consumption[prevIndex];
+                const error = actual - pred;
+                persistenceSSE += error * error;
+                persistenceMAE += Math.abs(error);
+            }
+            const persistenceRMSE = Math.sqrt(persistenceSSE / m);
+            persistenceMAE /= m;
+            const persistenceR2 = 1 - (persistenceSSE / totalSS);
+
+            // 2. Historical Mean: train mean on trainSeries, evaluate on testSeries
+            const trainMean = trainSeries.reduce((a, b) => a + b, 0) / trainSeries.length;
+            let meanSSE = 0, meanMAE = 0;
+            for (let i = 0; i < m; i++) {
+                const actual = testSeries[i];
+                const error = actual - trainMean;
                 meanSSE += error * error;
-                totalSS += error * error;
                 meanMAE += Math.abs(error);
             }
-            const meanRMSE = Math.sqrt(meanSSE / n);
-            meanMAE /= n;
-            
-            // Linear Regression
+            const meanRMSE = Math.sqrt(meanSSE / m);
+            meanMAE /= m;
+            const meanR2 = 1 - (meanSSE / totalSS);
+
+            // 3. Linear Regression: fit slope & intercept on trainSeries (0..splitIdx-1), predict testSeries (splitIdx..n-1)
+            const nTrain = trainSeries.length;
             let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
-            for (let i = 0; i < n; i++) {
+            for (let i = 0; i < nTrain; i++) {
                 sumX += i;
-                sumY += consumption[i];
-                sumXY += i * consumption[i];
+                sumY += trainSeries[i];
+                sumXY += i * trainSeries[i];
                 sumX2 += i * i;
             }
-            const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-            const intercept = (sumY - slope * sumX) / n;
-            
+            const denom = (nTrain * sumX2 - sumX * sumX);
+            const slope = denom !== 0 ? (nTrain * sumXY - sumX * sumY) / denom : 0;
+            const intercept = (sumY - slope * sumX) / nTrain;
+
             let linearSSE = 0, linearMAE = 0;
-            for (let i = 0; i < n; i++) {
-                const pred = intercept + slope * i;
-                const error = consumption[i] - pred;
+            for (let i = 0; i < m; i++) {
+                const actual = testSeries[i];
+                const t = splitIdx + i;
+                const pred = intercept + slope * t;
+                const error = actual - pred;
                 linearSSE += error * error;
                 linearMAE += Math.abs(error);
             }
-            const linearRMSE = Math.sqrt(linearSSE / n);
-            linearMAE /= n;
+            const linearRMSE = Math.sqrt(linearSSE / m);
+            linearMAE /= m;
             const linearR2 = 1 - (linearSSE / totalSS);
-
-            const persistenceR2 = 1 - (persistenceSSE / totalSS);
-            const meanR2 = 0;
 
             return {
                 persistence: { RMSE: persistenceRMSE, MAE: persistenceMAE, R2: persistenceR2 },
