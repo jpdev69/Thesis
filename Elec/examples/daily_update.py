@@ -694,6 +694,19 @@ def main() -> None:
             + ("retrain=never" if args.retrain == "never" else "anchored bills unchanged")
             + ")."
         )
+        prior_metrics = state.get("last_train_metrics")
+        if prior_metrics:
+            print(
+                f"  Serving model trained at: {state.get('last_trained_at')} "
+                f"(stored evidence, models/ops/state.json)"
+            )
+            print(
+                f"  Last train metrics: RMSE {prior_metrics.get('RMSE', 0):.2f} | "
+                f"MAE {prior_metrics.get('MAE', 0):.2f} | "
+                f"MAPE {prior_metrics.get('MAPE', 0):.2f}% | "
+                f"R2 {prior_metrics.get('R2', 0):.4f} | "
+                f"DirAcc {prior_metrics.get('directional_accuracy', 0):.1f}%"
+            )
     run_log["retrained"] = retrained
     state["anchored_signature"] = sig
     state["anchored_months"] = months
