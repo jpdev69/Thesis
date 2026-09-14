@@ -85,8 +85,8 @@
     <main class="main-content">
         <header class="header">
             <div class="header-left">
-                <h1>Technical Model Operations</h1>
-                <p class="subtitle">Train and evaluate the forecasting models used by the workspace</p>
+                <h1>Model Comparison</h1>
+                <p class="subtitle">Served hybrid LSTM-SVM vs ARIMA baseline from the operational pipeline</p>
             </div>
             <div class="header-right">
                 <button class="btn-icon" id="themeToggle" onclick="toggleTheme()">
@@ -105,53 +105,16 @@
                         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
                     </svg>
                 </button>
-                <button class="btn-primary">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                    </svg>
-                    Train New Model
-                </button>
             </div>
         </header>
 
         <div class="content-grid">
-            <div class="card" style="grid-column: span 12;">
-                <div class="card-header">
-                    <h3>Training Input</h3>
-                    <span class="badge">Technical</span>
-                </div>
-                <div class="card-body">
-                    <p style="margin: 0 0 16px; color: var(--text-secondary); line-height: 1.6;">
-                        This area is intended for technical staff. Client-facing pages only display forecast outputs and operational insights, while model training and evaluation remain here.
-                    </p>
-                    <div class="csv-upload-zone" id="modelCsvDropZone">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                            <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-                        </svg>
-                        <span>Drag & drop CSV training data here, or click to browse</span>
-                        <input type="file" id="modelCsvFileInput" accept=".csv" style="display:none">
-                    </div>
-                    <div class="csv-file-info" id="modelFileInfo" style="display:none">
-                        <span><strong id="modelFileName"></strong></span>
-                        <button class="btn-text-small" onclick="document.getElementById('modelFileInfo').style.display='none'">✕</button>
-                    </div>
-                    <div class="form-group">
-                        <label>Historical daily data (CSV format)</label>
-                        <textarea id="modelTrainingDataInput" rows="6" placeholder="Date,Consumption,Temperature,Humidity,Rainfall,HasClasses&#10;2026-07-01,1450,28.5,72,0,1&#10;2026-07-02,1520,29.2,68,0,1"></textarea>
-                    </div>
-                    <div class="button-group">
-                        <button onclick="generateModelSampleData()" class="btn-secondary">Generate Sample</button>
-                        <button id="modelTrainBtn" onclick="trainTechnicalModel()" class="btn-primary">Train Model</button>
-                    </div>
-                </div>
-            </div>
-
             <div class="card" style="grid-column: span 6;">
                 <div class="card-header">
-                    <h3>Training Results</h3>
+                    <h3>Operational Model</h3>
                 </div>
                 <div class="card-body">
+                    <div id="techMetricsSource" style="margin: 0 0 12px; font-size: 12px; color: var(--text-secondary); line-height: 1.5;">Waiting for the operational model…</div>
                     <div class="metrics-grid">
                         <div class="metric-item">
                             <div class="metric-label">RMSE</div>
@@ -169,67 +132,6 @@
                             <div class="metric-label">R² Score</div>
                             <div class="metric-value" id="techR2">—</div>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card" style="grid-column: span 12;">
-                <div class="card-header">
-                    <h3>Technical Model Catalog</h3>
-                    <span class="badge success" id="modelCatalogBadge">Loading...</span>
-                </div>
-                <div class="card-body">
-                    <p style="margin: 0 0 16px; color: var(--text-secondary); line-height: 1.6;">
-                        Comprehensive comparison of current model vs baseline methods. Train a model to see performance metrics.
-                    </p>
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr style="border-bottom: 1px solid var(--border-color); text-align: left;">
-                                <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">Model Name</th>
-                                <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">Type</th>
-                                <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">RMSE</th>
-                                <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">MAE</th>
-                                <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">R² Score</th>
-                                <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">Improvement</th>
-                                <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="modelCatalogTableBody">
-                            <tr>
-                                <td colspan="7" style="padding: 40px; text-align: center; color: var(--text-secondary);">
-                                    Train a model to populate catalog with performance comparisons
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    
-                    <!-- Performance Insight -->
-                    <div id="catalogInsight" style="margin-top: 16px; padding: 16px; background: var(--bg-tertiary); border-radius: 8px; border-left: 4px solid #94a3b8; display: none;">
-                        <div style="display: flex; align-items: start; gap: 12px;">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;">
-                                <circle cx="12" cy="12" r="10"/>
-                                <line x1="12" y1="16" x2="12" y2="12"/>
-                                <line x1="12" y1="8" x2="12.01" y2="8"/>
-                            </svg>
-                            <div style="flex: 1;">
-                                <div style="font-weight: 600; margin-bottom: 4px;">Model Insight</div>
-                                <div id="catalogInsightText" style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">
-                                    Comparing multiple models helps identify which approach works best for your data.
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Baseline Explanation -->
-                    <div style="margin-top: 16px; padding: 12px; background: var(--bg-tertiary); border-radius: 6px; font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
-                        <strong style="color: var(--text-primary);">Baseline Methods (Evaluated on identical 80/20 Holdout Test Window):</strong>
-                        <ul style="margin: 8px 0 0 0; padding-left: 20px;">
-                            <li><strong>Persistence (Naive):</strong> Predicts next value = current value (simplest benchmark)</li>
-                            <li><strong>Historical Mean:</strong> Predicts average of training period</li>
-                            <li><strong>Linear Regression:</strong> Fits linear trend on training split, evaluated on test split</li>
-                            <li><strong>ARIMA:</strong> Classical ARIMA benchmark trained on 80% split, evaluated on 20% holdout</li>
-                            <li><strong>Attention-LSTM + RBF-SVR:</strong> Active hybrid model trained on 80% split, evaluated on 20% holdout</li>
-                        </ul>
                     </div>
                 </div>
             </div>
@@ -272,6 +174,64 @@
                 </div>
             </div>
 
+            <div class="card" style="grid-column: span 12;">
+                <div class="card-header">
+                    <h3>Model Comparison — Hybrid LSTM-SVM vs ARIMA</h3>
+                    <span class="badge success" id="modelCatalogBadge">Loading...</span>
+                </div>
+                <div class="card-body">
+                    <p style="margin: 0 0 16px; color: var(--text-secondary); line-height: 1.6;">
+                        Live comparison of the served operational model against the ARIMA baseline on the identical holdout window.
+                    </p>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border-color); text-align: left;">
+                                <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">Model Name</th>
+                                <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">Type</th>
+                                <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">RMSE</th>
+                                <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">MAE</th>
+                                <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">R² Score</th>
+                                <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">Improvement</th>
+                                <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modelCatalogTableBody">
+                            <tr>
+                                <td colspan="7" style="padding: 40px; text-align: center; color: var(--text-secondary);">
+                                    Waiting for the backend operational comparison (Hybrid LSTM-SVM vs ARIMA)…
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <!-- Performance Insight -->
+                    <div id="catalogInsight" style="margin-top: 16px; padding: 16px; background: var(--bg-tertiary); border-radius: 8px; border-left: 4px solid #94a3b8; display: none;">
+                        <div style="display: flex; align-items: start; gap: 12px;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="16" x2="12" y2="12"/>
+                                <line x1="12" y1="8" x2="12.01" y2="8"/>
+                            </svg>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; margin-bottom: 4px;">Model Insight</div>
+                                <div id="catalogInsightText" style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">
+                                    Comparing multiple models helps identify which approach works best for your data.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Comparison Scope -->
+                    <div style="margin-top: 16px; padding: 12px; background: var(--bg-tertiary); border-radius: 6px; font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
+                        <strong style="color: var(--text-primary);">Comparison Scope (Thesis Evidence):</strong>
+                        <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+                            <li><strong>Hybrid LSTM-SVM:</strong> the served operational model (attention-LSTM &rarr; RBF-SVR cascade, <code>models/ops/daily</code>)</li>
+                            <li><strong>ARIMA:</strong> classical baseline, order selected via AIC, re-estimated on the same holdout window</li>
+                        </ul>
+                        Only these two models were evaluated for the thesis.
+                    </div>
+                </div>
+            </div>
 
         </div>
     </main>
@@ -280,18 +240,6 @@
     <script src="auth.js?v=20260805c"></script>
     <script src="dashboard-fixed.js?v=20260704"></script>
     <script>
-        const MODELS_PAGE_METRICS_KEY = 'energyai.models.pageMetrics';
-        const MODELS_PAGE_INPUT_KEY = 'energyai.models.trainingInput';
-
-        function generateModelSampleData() {
-            const sampleData = generateDynamicSampleCSV(30);
-            document.getElementById('modelTrainingDataInput').value = sampleData;
-        }
-
-        let arimaBaselineData = null;
-        let arimaRequestInFlight = false;
-        let latestCurrentMetrics = null;
-
         function apiUrl(path) {
             if (window.EnergyAIConfig && typeof window.EnergyAIConfig.apiUrl === 'function') {
                 return window.EnergyAIConfig.apiUrl(path);
@@ -300,179 +248,21 @@
             return `http://localhost:8000${cleaned}`;
         }
 
-        function getSeriesSignature(values) {
-            if (!Array.isArray(values) || values.length === 0) return '';
-            const first = Number(values[0] || 0).toFixed(4);
-            const last = Number(values[values.length - 1] || 0).toFixed(4);
-            return `${values.length}:${first}:${last}`;
-        }
-
-        function loadCachedArimaBaseline() {
+        async function fetchJsonTimeout(url, ms) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), ms);
             try {
-                const raw = localStorage.getItem('energyai.arimaBaseline');
-                if (!raw) return;
-                const parsed = JSON.parse(raw);
-                if (!parsed || !parsed.signature || !parsed.metrics) return;
-                arimaBaselineData = parsed;
-            } catch (error) {
-                console.warn('Unable to load cached ARIMA baseline:', error);
-            }
-        }
-
-        async function fetchArimaBaselineIfNeeded(consumption, signature) {
-            if (!Array.isArray(consumption) || consumption.length < 30) return;
-            if (arimaRequestInFlight) return;
-            if (arimaBaselineData && arimaBaselineData.signature === signature) return;
-
-            arimaRequestInFlight = true;
-            try {
-                const response = await fetch(apiUrl('/benchmark-arima'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        consumption,
-                        train_ratio: 0.8
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-
-                const payload = await response.json();
-                const metrics = payload?.benchmark?.metrics;
-                if (!metrics) {
-                    throw new Error('Missing ARIMA metrics in response');
-                }
-
-                arimaBaselineData = {
-                    signature,
-                    metrics: {
-                        RMSE: Number(metrics.RMSE || 0),
-                        MAE: Number(metrics.MAE || 0),
-                        MAPE: Number(metrics.MAPE || 0),
-                        R2: Number(metrics.R2 || 0)
-                    },
-                    order: payload?.benchmark?.order || null,
-                    used_fallback: Boolean(payload?.benchmark?.used_fallback),
-                    fallback_reason: payload?.benchmark?.fallback_reason || null,
-                    timestamp: new Date().toISOString()
-                };
-
-                localStorage.setItem('energyai.arimaBaseline', JSON.stringify(arimaBaselineData));
-
-                if (latestCurrentMetrics) {
-                    updateModelCatalog(latestCurrentMetrics);
-                }
-            } catch (error) {
-                console.warn('ARIMA benchmark unavailable:', error.message);
+                const res = await fetch(url, { signal: controller.signal });
+                if (!res.ok) return null;
+                return await res.json().catch(() => null);
+            } catch (_) {
+                return null;
             } finally {
-                arimaRequestInFlight = false;
+                clearTimeout(timer);
             }
         }
 
-        function setupModelTrainingUpload() {
-            const dropZone = document.getElementById('modelCsvDropZone');
-            const fileInput = document.getElementById('modelCsvFileInput');
-            if (!dropZone || !fileInput) return;
-
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
-                dropZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); });
-            });
-
-            dropZone.addEventListener('dragenter', () => dropZone.classList.add('drag-over'));
-            dropZone.addEventListener('dragover', () => dropZone.classList.add('drag-over'));
-            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-            dropZone.addEventListener('drop', e => {
-                dropZone.classList.remove('drag-over');
-                const file = e.dataTransfer.files[0];
-                if (file) handleModelCsvFile(file);
-            });
-            dropZone.addEventListener('click', () => fileInput.click());
-            fileInput.addEventListener('change', e => {
-                if (e.target.files[0]) handleModelCsvFile(e.target.files[0]);
-            });
-        }
-
-        function parseTrainingCsv(csvText) {
-            const lines = csvText.trim().split('\n').filter(Boolean);
-            if (lines.length < 2) {
-                throw new Error('CSV must include header and at least one data row');
-            }
-
-            const data = {
-                dates: [],
-                consumption: [],
-                temperature: [],
-                humidity: [],
-                rainfall: [],
-                has_classes: [],
-                day_of_week: [],
-                is_weekend: []
-            };
-
-            for (let i = 1; i < lines.length; i++) {
-                const parts = lines[i].split(',').map(p => p.trim());
-                if (parts.length < 6) continue;
-
-                const dateStr = parts[0];
-                const consumption = Number(parts[1]);
-                const temperature = Number(parts[2]);
-                const humidity = Number(parts[3]);
-                const rainfall = Number(parts[4]);
-                const hasClasses = Number(parts[5]);
-
-                if (
-                    Number.isNaN(consumption) ||
-                    Number.isNaN(temperature) ||
-                    Number.isNaN(humidity) ||
-                    Number.isNaN(rainfall) ||
-                    Number.isNaN(hasClasses)
-                ) {
-                    continue;
-                }
-
-                const dateObj = new Date(`${dateStr}T00:00:00`);
-                if (Number.isNaN(dateObj.getTime())) {
-                    continue;
-                }
-
-                const jsDay = dateObj.getDay();
-                const dayOfWeek = (jsDay + 6) % 7; // Monday=0 ... Sunday=6
-                const isWeekend = dayOfWeek >= 5 ? 1 : 0;
-
-                data.dates.push(dateStr);
-                data.consumption.push(consumption);
-                data.temperature.push(temperature);
-                data.humidity.push(humidity);
-                data.rainfall.push(rainfall);
-                data.has_classes.push(hasClasses);
-                data.day_of_week.push(dayOfWeek);
-                data.is_weekend.push(isWeekend);
-            }
-
-            if (data.consumption.length < 30) {
-                throw new Error('Need at least 30 valid daily rows for thesis training');
-            }
-
-            return data;
-        }
-
-        function handleModelCsvFile(file) {
-            if (!file.name.endsWith('.csv')) {
-                alert('Please upload a .csv file');
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = e => {
-                document.getElementById('modelTrainingDataInput').value = e.target.result;
-                document.getElementById('modelFileName').textContent = file.name;
-                document.getElementById('modelFileInfo').style.display = 'flex';
-            };
-            reader.readAsText(file);
-        }
-
-        function updateEvaluationMetrics(metrics) {
+        function updateEvaluationMetrics(metrics, sourceLabel) {
             const rmse = Number(metrics?.RMSE || 0);
             const mae = Number(metrics?.MAE || 0);
             const r2 = Number(metrics?.R2 || 0);
@@ -486,255 +276,84 @@
             document.getElementById('techMape').textContent = `${Number(metrics?.MAPE || 0).toFixed(2)}%`;
             document.getElementById('techR2').textContent = r2.toFixed(2);
 
+            const sourceEl = document.getElementById('techMetricsSource');
+            if (sourceEl) {
+                sourceEl.textContent = sourceLabel || '';
+            }
+
             const rmseBar = document.getElementById('evalRmseBar');
             const maeBar = document.getElementById('evalMaeBar');
             const r2Bar = document.getElementById('evalR2Bar');
-            
+
             const rmsePercent = Math.max(5, Math.min(95, 100 - (rmse / 100 * 100)));
             const maePercent = Math.max(5, Math.min(95, 100 - (mae / 100 * 100)));
             const r2Percent = Math.max(5, Math.min(98, r2 * 100));
-            
+
             if (rmseBar) rmseBar.style.width = `${rmsePercent}%`;
             if (maeBar) maeBar.style.width = `${maePercent}%`;
             if (r2Bar) r2Bar.style.width = `${r2Percent}%`;
-            
-            // Update model catalog with baseline comparison
-            updateModelCatalog(metrics);
         }
 
-        function getHistoricalDataForCatalog() {
+        function updateModelCatalog(hybridMetrics, arimaMetrics, arimaDetails, sourceLabel) {
             try {
-                const inputRaw = localStorage.getItem(MODELS_PAGE_INPUT_KEY);
-                if (inputRaw) {
-                    const inputParsed = JSON.parse(inputRaw);
-                    if (inputParsed && Array.isArray(inputParsed.consumption) && inputParsed.consumption.length > 1) {
-                        return inputParsed;
-                    }
-                }
+                if (!hybridMetrics || !arimaMetrics) return;
 
-                const sharedRaw = localStorage.getItem('energyai.shared.dailyModel');
-                if (sharedRaw) {
-                    const sharedParsed = JSON.parse(sharedRaw);
-                    if (sharedParsed?.historicalData?.consumption?.length > 1) {
-                        return {
-                            consumption: sharedParsed.historicalData.consumption,
-                            temperature: sharedParsed.historicalData.temperature,
-                            humidity: sharedParsed.historicalData.humidity,
-                            rainfall: sharedParsed.historicalData.rainfall,
-                            has_classes: sharedParsed.historicalData.hasClasses,
-                            dates: sharedParsed.historicalData.dates
-                        };
-                    }
-                }
-            } catch (error) {
-                console.warn('Failed to load historical data for catalog:', error);
-            }
-            return null;
-        }
+                const hybridRMSE = Number(hybridMetrics.RMSE || 0);
+                const hybridMAE = Number(hybridMetrics.MAE || 0);
+                const hybridR2 = Number(hybridMetrics.R2 || 0);
+                const arimaRMSE = Number(arimaMetrics.RMSE || 0);
+                const arimaMAE = Number(arimaMetrics.MAE || 0);
+                const arimaR2 = Number(arimaMetrics.R2 || 0);
 
-        function calculateBaselineMetrics(historicalData) {
-            if (!historicalData || !historicalData.consumption || historicalData.consumption.length < 30) {
-                return null;
-            }
+                const rmseReduction = arimaRMSE > 0 ? ((arimaRMSE - hybridRMSE) / arimaRMSE * 100) : 0;
+                const r2Gain = hybridR2 - arimaR2;
 
-            const consumption = historicalData.consumption;
-            const n = consumption.length;
-
-            // Use exact 80/20 train/test split matching model training
-            let splitIdx = Math.floor(n * 0.8);
-            splitIdx = Math.max(splitIdx, 21);
-            splitIdx = Math.min(splitIdx, n - 7);
-
-            const trainSeries = consumption.slice(0, splitIdx);
-            const testSeries = consumption.slice(splitIdx);
-            const m = testSeries.length;
-            if (m < 1) return null;
-
-            // Variance of test set (for R² calculation on holdout)
-            const testMean = testSeries.reduce((a, b) => a + b, 0) / m;
-            let totalSS = 0;
-            for (let i = 0; i < m; i++) {
-                const diff = testSeries[i] - testMean;
-                totalSS += diff * diff;
-            }
-            if (totalSS === 0) totalSS = 1e-6;
-
-            // 1. Persistence (Naive): predict day t using day t-1
-            let persistenceSSE = 0, persistenceMAE = 0;
-            for (let i = 0; i < m; i++) {
-                const actual = testSeries[i];
-                const prevIndex = splitIdx + i - 1;
-                const pred = consumption[prevIndex];
-                const error = actual - pred;
-                persistenceSSE += error * error;
-                persistenceMAE += Math.abs(error);
-            }
-            const persistenceRMSE = Math.sqrt(persistenceSSE / m);
-            persistenceMAE /= m;
-            const persistenceR2 = 1 - (persistenceSSE / totalSS);
-
-            // 2. Historical Mean: train mean on trainSeries, evaluate on testSeries
-            const trainMean = trainSeries.reduce((a, b) => a + b, 0) / trainSeries.length;
-            let meanSSE = 0, meanMAE = 0;
-            for (let i = 0; i < m; i++) {
-                const actual = testSeries[i];
-                const error = actual - trainMean;
-                meanSSE += error * error;
-                meanMAE += Math.abs(error);
-            }
-            const meanRMSE = Math.sqrt(meanSSE / m);
-            meanMAE /= m;
-            const meanR2 = 1 - (meanSSE / totalSS);
-
-            // 3. Linear Regression: fit slope & intercept on trainSeries (0..splitIdx-1), predict testSeries (splitIdx..n-1)
-            const nTrain = trainSeries.length;
-            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
-            for (let i = 0; i < nTrain; i++) {
-                sumX += i;
-                sumY += trainSeries[i];
-                sumXY += i * trainSeries[i];
-                sumX2 += i * i;
-            }
-            const denom = (nTrain * sumX2 - sumX * sumX);
-            const slope = denom !== 0 ? (nTrain * sumXY - sumX * sumY) / denom : 0;
-            const intercept = (sumY - slope * sumX) / nTrain;
-
-            let linearSSE = 0, linearMAE = 0;
-            for (let i = 0; i < m; i++) {
-                const actual = testSeries[i];
-                const t = splitIdx + i;
-                const pred = intercept + slope * t;
-                const error = actual - pred;
-                linearSSE += error * error;
-                linearMAE += Math.abs(error);
-            }
-            const linearRMSE = Math.sqrt(linearSSE / m);
-            linearMAE /= m;
-            const linearR2 = 1 - (linearSSE / totalSS);
-
-            return {
-                persistence: { RMSE: persistenceRMSE, MAE: persistenceMAE, R2: persistenceR2 },
-                mean: { RMSE: meanRMSE, MAE: meanMAE, R2: meanR2 },
-                linear: { RMSE: linearRMSE, MAE: linearMAE, R2: linearR2 }
-            };
-        }
-
-        function updateModelCatalog(currentMetrics) {
-            try {
-                latestCurrentMetrics = currentMetrics;
-                const historicalData = getHistoricalDataForCatalog();
-                if (!historicalData) return;
-
-                const baselines = calculateBaselineMetrics(historicalData);
-                if (!baselines) return;
-
-                const signature = getSeriesSignature(historicalData.consumption);
-                fetchArimaBaselineIfNeeded(historicalData.consumption, signature);
-
-                const currentRMSE = Number(currentMetrics?.RMSE || 0);
-                const currentMAE = Number(currentMetrics?.MAE || 0);
-                const currentR2 = Number(currentMetrics?.R2 || 0);
-                const currentRmseDen = Math.max(currentRMSE, 1e-6);
-
-                const arimaMetrics = (
-                    arimaBaselineData &&
-                    arimaBaselineData.signature === signature &&
-                    arimaBaselineData.metrics
-                ) ? arimaBaselineData.metrics : null;
-
-                // Find best baseline RMSE for comparison
-                const rmseCandidates = [
-                    baselines.linear.RMSE,
-                    baselines.persistence.RMSE,
-                    baselines.mean.RMSE
-                ];
-                if (arimaMetrics) rmseCandidates.push(arimaMetrics.RMSE);
-                const bestBaselineRMSE = Math.min(...rmseCandidates);
-
-                // Build table rows with consistent improvement calculation
-                // All improvements calculated relative to current model to prevent extreme values
                 const models = [
                     {
-                        name: 'Daily Predictor (Current)',
+                        name: 'Hybrid LSTM-SVM (Current)',
                         type: 'ML Model',
-                        rmse: currentRMSE,
-                        mae: currentMAE,
-                        r2: currentR2,
-                        // Improvement vs best baseline, using current as denominator
-                        improvement: ((bestBaselineRMSE - currentRMSE) / currentRmseDen * 100),
+                        rmse: hybridRMSE,
+                        mae: hybridMAE,
+                        r2: hybridR2,
+                        improvement: rmseReduction,
                         status: 'Active',
                         isCurrent: true
                     },
                     {
-                        name: 'Linear Regression',
+                        name: 'ARIMA',
                         type: 'Baseline',
-                        rmse: baselines.linear.RMSE,
-                        mae: baselines.linear.MAE,
-                        r2: baselines.linear.R2,
-                        // Show how much worse baseline is: negative if worse than current
-                        improvement: -((baselines.linear.RMSE - currentRMSE) / currentRmseDen * 100),
-                        status: 'Reference'
-                    },
-                    {
-                        name: 'Persistence (Naive)',
-                        type: 'Baseline',
-                        rmse: baselines.persistence.RMSE,
-                        mae: baselines.persistence.MAE,
-                        r2: baselines.persistence.R2,
-                        // Show how much worse baseline is: negative if worse than current
-                        improvement: -((baselines.persistence.RMSE - currentRMSE) / currentRmseDen * 100),
-                        status: 'Reference'
-                    },
-                    {
-                        name: 'Historical Mean',
-                        type: 'Baseline',
-                        rmse: baselines.mean.RMSE,
-                        mae: baselines.mean.MAE,
-                        r2: baselines.mean.R2,
-                        // Show how much worse baseline is: negative if worse than current
-                        improvement: -((baselines.mean.RMSE - currentRMSE) / currentRmseDen * 100),
-                        status: 'Reference'
+                        rmse: arimaRMSE,
+                        mae: arimaMAE,
+                        r2: arimaR2,
+                        improvement: -rmseReduction,
+                        status: arimaDetails?.used_fallback ? 'Fallback' : 'Reference'
                     }
                 ];
 
-                if (arimaMetrics) {
-                    models.push({
-                        name: 'ARIMA',
-                        type: 'Baseline',
-                        rmse: Number(arimaMetrics.RMSE || 0),
-                        mae: Number(arimaMetrics.MAE || 0),
-                        r2: Number(arimaMetrics.R2 || 0),
-                        improvement: -((Number(arimaMetrics.RMSE || 0) - currentRMSE) / currentRmseDen * 100),
-                        status: arimaBaselineData?.used_fallback ? 'Fallback' : 'Reference'
-                    });
-                }
-
-                // Sort by R² (best first)
                 models.sort((a, b) => b.r2 - a.r2);
 
-                // Update table
                 const tbody = document.getElementById('modelCatalogTableBody');
                 let html = '';
-                
+
                 models.forEach(model => {
-                    const rowStyle = model.isCurrent 
+                    const rowStyle = model.isCurrent
                         ? 'border-bottom: 1px solid var(--border-color); background: rgba(16, 185, 129, 0.05);'
                         : 'border-bottom: 1px solid var(--border-color);';
-                    
+
                     const nameStyle = model.isCurrent ? 'font-weight: 600; color: #10b981;' : 'font-weight: 500;';
                     const statusBadge = model.isCurrent
                         ? '<span class="badge success">Active</span>'
-                        : '<span class="badge" style="background: var(--gray-100); color: var(--text-secondary);">Reference</span>';
-                    
+                        : `<span class="badge" style="background: var(--gray-100); color: var(--text-secondary);">${model.status}</span>`;
+
                     const improvementText = model.improvement >= 0
                         ? `+${model.improvement.toFixed(1)}%`
                         : `${model.improvement.toFixed(1)}%`;
-                    
+
                     const improvementColor = model.improvement > 0 ? '#10b981' : '#ef4444';
-                    const improvementStyle = model.isCurrent 
+                    const improvementStyle = model.isCurrent
                         ? `font-weight: 700; color: ${improvementColor};`
                         : `font-weight: 600; color: ${improvementColor};`;
-                    
+
                     html += `
                         <tr style="${rowStyle}">
                             <td style="padding: 16px; ${nameStyle}">${model.name}</td>
@@ -747,156 +366,79 @@
                         </tr>
                     `;
                 });
-                
+
                 tbody.innerHTML = html;
 
-                // Update badge
                 const badge = document.getElementById('modelCatalogBadge');
-                const r2Candidates = [
-                    baselines.persistence.R2,
-                    baselines.linear.R2,
-                    baselines.mean.R2
-                ];
-                if (arimaMetrics) r2Candidates.push(Number(arimaMetrics.R2 || 0));
-                const bestBaseline = Math.max(...r2Candidates);
-                const denom = Math.max(1e-6, 1 - bestBaseline);
-                const improvement = ((currentR2 - bestBaseline) / denom * 100);
-                
-                if (improvement > 30) {
-                    badge.textContent = `Excellent (+${improvement.toFixed(0)}%)`;
+                if (rmseReduction > 0) {
+                    badge.textContent = `Hybrid: ${rmseReduction.toFixed(1)}% lower RMSE than ARIMA`;
                     badge.className = 'badge success';
-                } else if (improvement > 10) {
-                    badge.textContent = `Good (+${improvement.toFixed(0)}%)`;
-                    badge.className = 'badge';
-                    badge.style.background = '#fbbf24';
-                    badge.style.color = '#fff';
                 } else {
-                    badge.textContent = `Modest (+${improvement.toFixed(0)}%)`;
+                    badge.textContent = `ARIMA: ${Math.abs(rmseReduction).toFixed(1)}% lower RMSE than the hybrid`;
                     badge.className = 'badge';
                     badge.style.background = '#94a3b8';
                     badge.style.color = '#fff';
                 }
 
-                // Update insight
                 const insightDiv = document.getElementById('catalogInsight');
                 const insightText = document.getElementById('catalogInsightText');
-                
-                insightDiv.style.display = 'block';
-                insightDiv.style.borderLeftColor = improvement > 20 ? '#10b981' : (improvement > 10 ? '#fbbf24' : '#94a3b8');
-                
-                if (improvement > 30) {
-                    insightText.innerHTML = `<strong style="color: #10b981;">Excellent Performance:</strong> Current model achieves ${improvement.toFixed(1)}% improvement over best baseline (R² ${bestBaseline.toFixed(3)}). Model complexity is well-justified by significant performance gains.`;
-                } else if (improvement > 10) {
-                    insightText.innerHTML = `<strong style="color: #fbbf24;">Good Performance:</strong> Current model shows ${improvement.toFixed(1)}% improvement over best baseline. Moderate gains justify model complexity for this application.`;
-                } else if (improvement > 0) {
-                    insightText.innerHTML = `<strong style="color: #f59e0b;">Modest Performance:</strong> Current model improves by ${improvement.toFixed(1)}% over best baseline. Consider if gains justify added complexity, or if simpler approach sufficient.`;
-                } else {
-                    insightText.innerHTML = `<strong style="color: #ef4444;">Performance Warning:</strong> Current model performs similar to or worse than baselines. Review model architecture, hyperparameters, or consider simpler approaches.`;
-                }
+                const orderText = arimaDetails?.order ? ` (order ${arimaDetails.order.join(',')})` : '';
 
-                if (!arimaMetrics) {
-                    insightText.innerHTML += ` ARIMA row will appear automatically when backend API is running.`;
-                }
+                insightDiv.style.display = 'block';
+                insightDiv.style.borderLeftColor = rmseReduction > 0 ? '#10b981' : '#ef4444';
+
+                const lead = rmseReduction > 0
+                    ? `<strong style="color: #10b981;">Hybrid leads:</strong> the hybrid achieves ${rmseReduction.toFixed(1)}% lower RMSE than ARIMA${orderText} on the same window (R\u00b2 ${hybridR2.toFixed(3)} vs ${arimaR2.toFixed(3)}, gain ${r2Gain.toFixed(3)}).`
+                    : `<strong style="color: #ef4444;">ARIMA leads:</strong> ARIMA${orderText} achieves ${Math.abs(rmseReduction).toFixed(1)}% lower RMSE than the hybrid on the same window (R\u00b2 ${arimaR2.toFixed(3)} vs ${hybridR2.toFixed(3)}).`;
+                insightText.innerHTML = `${lead} Source: ${sourceLabel || 'backend'}.`;
 
             } catch (error) {
                 console.warn('Error updating model catalog:', error);
             }
         }
 
-        function restoreEvaluationMetricsFromStorage() {
-            try {
-                const raw = localStorage.getItem(MODELS_PAGE_METRICS_KEY);
-                if (raw) {
-                    const metrics = JSON.parse(raw);
-                    if (metrics && typeof metrics === 'object') {
-                        updateEvaluationMetrics(metrics);
-                        return;
-                    }
-                }
+        async function hydrateOperationalMetrics() {
+            const sourceEl = document.getElementById('techMetricsSource');
+            const badge = document.getElementById('modelCatalogBadge');
 
-                const sharedRaw = localStorage.getItem('energyai.shared.dailyModel');
-                if (!sharedRaw) return;
-                const sharedPayload = JSON.parse(sharedRaw);
-                if (sharedPayload?.trainingMetrics) {
-                    updateEvaluationMetrics(sharedPayload.trainingMetrics);
+            const metricsPayload = await fetchJsonTimeout(apiUrl('/metrics'), 4000);
+            if (!metricsPayload || !metricsPayload.is_trained) {
+                if (sourceEl) {
+                    sourceEl.textContent = 'Backend unreachable — operational metrics unavailable. Start daily_api.py to view the served model.';
                 }
-            } catch (error) {
-                console.warn('Unable to restore evaluation metrics:', error);
-            }
-        }
-
-        async function trainTechnicalModel() {
-            const input = document.getElementById('modelTrainingDataInput').value;
-            if (!input.trim()) {
-                alert('Please provide training data');
+                if (badge) badge.textContent = 'Backend offline';
                 return;
             }
 
-            const btn = document.getElementById('modelTrainBtn');
-            if (btn) {
-                btn.disabled = true;
-                btn.textContent = 'Training...';
+            const validationMetrics = metricsPayload.validation_metrics
+                || (metricsPayload.ops && metricsPayload.ops.validation_metrics);
+            const trainedAt = metricsPayload.last_trained
+                ? String(metricsPayload.last_trained).split('T')[0]
+                : 'n/a';
+            const sourceText = metricsPayload.model_source === 'ops_disk'
+                ? `Operational model (models/ops/daily), trained ${trainedAt} — one-step validation on the training block`
+                : `In-memory model from a /train-daily run, trained ${trainedAt} — not the served operational model`;
+
+            if (validationMetrics) {
+                updateEvaluationMetrics(validationMetrics, sourceText);
+            } else if (sourceEl) {
+                sourceEl.textContent = sourceText;
             }
 
-            try {
-                const parsed = parseTrainingCsv(input);
-                localStorage.setItem(MODELS_PAGE_INPUT_KEY, JSON.stringify(parsed));
-
-                const response = await fetch(apiUrl('/train-daily'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        consumption: parsed.consumption,
-                        temperature: parsed.temperature,
-                        humidity: parsed.humidity,
-                        rainfall: parsed.rainfall,
-                        has_classes: parsed.has_classes,
-                        day_of_week: parsed.day_of_week,
-                        is_weekend: parsed.is_weekend,
-                        epochs: 100
-                    })
-                });
-
-                const result = await response.json().catch(() => ({}));
-                if (!response.ok) {
-                    const detail = result?.detail || `HTTP ${response.status}`;
-                    throw new Error(detail);
-                }
-
-                const metrics = result?.validation_metrics;
-                if (!metrics) {
-                    throw new Error('Backend response is missing validation metrics');
-                }
-
-                localStorage.setItem(MODELS_PAGE_METRICS_KEY, JSON.stringify(metrics));
-
-                const signature = getSeriesSignature(parsed.consumption);
-                const arima = result?.baseline_comparison?.metrics?.arima;
-                if (arima) {
-                    arimaBaselineData = {
-                        signature,
-                        metrics: {
-                            RMSE: Number(arima.RMSE || 0),
-                            MAE: Number(arima.MAE || 0),
-                            MAPE: Number(arima.MAPE || 0),
-                            R2: Number(arima.R2 || 0)
-                        },
-                        order: result?.baseline_comparison?.arima_details?.order || null,
-                        used_fallback: Boolean(result?.baseline_comparison?.arima_details?.used_fallback),
-                        fallback_reason: result?.baseline_comparison?.arima_details?.fallback_reason || null,
-                        timestamp: new Date().toISOString()
-                    };
-                    localStorage.setItem('energyai.arimaBaseline', JSON.stringify(arimaBaselineData));
-                }
-
-                updateEvaluationMetrics(metrics);
-            } catch (error) {
-                alert(`Training failed: ${error.message}`);
-            } finally {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.textContent = 'Train Model';
-                }
+            const comparisonPayload = await fetchJsonTimeout(apiUrl('/baseline-comparison'), 6000);
+            const comparison = comparisonPayload?.baseline_comparison;
+            if (comparison && comparison.metrics && comparison.metrics.hybrid && comparison.metrics.arima) {
+                const sourceLabel = comparisonPayload.comparison_source === 'ops_model_live_evaluation'
+                    ? 'live operational evaluation on bill-anchored data'
+                    : 'latest training run';
+                updateModelCatalog(
+                    comparison.metrics.hybrid,
+                    comparison.metrics.arima,
+                    comparison.arima_details || {},
+                    sourceLabel
+                );
+            } else if (badge) {
+                badge.textContent = 'Comparison unavailable';
             }
         }
 
@@ -905,21 +447,13 @@
                 window.location.href = 'dashboard.html';
                 return;
             }
-            loadCachedArimaBaseline();
-            setupModelTrainingUpload();
-            generateModelSampleData();
-            restoreEvaluationMetricsFromStorage();
+            hydrateOperationalMetrics();
         });
 
-        window.addEventListener('energyai:model-updated', restoreEvaluationMetricsFromStorage);
+        window.addEventListener('energyai:model-updated', hydrateOperationalMetrics);
         window.addEventListener('storage', event => {
-            if (
-                event.key === 'energyai.shared.dailyModel' ||
-                event.key === MODELS_PAGE_METRICS_KEY ||
-                event.key === MODELS_PAGE_INPUT_KEY ||
-                event.key === 'energyai.arimaBaseline'
-            ) {
-                restoreEvaluationMetricsFromStorage();
+            if (event.key === 'energyai.shared.dailyModel') {
+                hydrateOperationalMetrics();
             }
         });
     </script>
