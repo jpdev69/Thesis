@@ -774,6 +774,9 @@ function renderForecastResult(ctx, days) {
     // Peak analysis
     updatePeakPanel(peakAnalysis, days, ctx.dates);
 
+    // KBRS prescriptive advisories
+    updateKbrsPanel(ctx, days);
+
     const costPerKwh = 12.383;
     const costs = predictions.map(p => p * costPerKwh);
     const totalConsumption = predictions.reduce((a, b) => a + b, 0);
@@ -952,6 +955,120 @@ function updateStatCard(id, value, subtitle) {
     const subEl = document.getElementById(id + 'Sub');
     if (valEl) animateValue(id + 'Value', value);
     if (subEl) subEl.textContent = subtitle;
+}
+
+// ============================================================
+//  KBRS PRESCRIPTIVE ADVISORIES
+// ============================================================
+
+const KBRS_HIGH_LOAD_FACTOR = 1.10;
+
+function kbrsDayLabel(i, dates) {
+    if (dates && dates[i]) {
+        return new Date(`${dates[i]}T00:00:00`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    }
+    const d = new Date();
+    d.setDate(d.getDate() + i + 1);
+    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function buildKbrsAdvisories(ctx, days) {
+    const { predictions, futureSchedule, peakAnalysis, dates } = ctx;
+    const avgLoad = (peakAnalysis && peakAnalysis.avgLoad)
+        ? peakAnalysis.avgLoad
+        : predictions.reduce((a, b) => a + b, 0) / predictions.length;
+
+    const advisories = [];
+
+    predictions.forEach((pred, i) => {
+        const isPeakDay = peakAnalysis && i === peakAnalysis.peakDayIndex;
+        const isHighLoad = avgLoad > 0 && pred >= avgLoad * KBRS_HIGH_LOAD_FACTOR;
+        if (!isPeakDay && !isHighLoad) return;
+
+        const pctVsAvg = avgLoad > 0 ? ((pred - avgLoad) / avgLoad * 100) : 0;
+        const hasClasses = futureSchedule[i] === 1;
+        const tips = [
+            `Projected ${pred.toFixed(1)} kWh (${pctVsAvg >= 0 ? '+' : ''}${pctVsAvg.toFixed(0)}% vs. the ${days}-day average). Pre-cool buildings during off-peak morning hours (before 07:00) to trim the afternoon HVAC peak.`
+        ];
+        if (hasClasses) {
+            tips.push('Class day detected: stagger air-conditioning start times and defer non-essential equipment (laboratories, pumps, AV rooms) to lower-load days.');
+        } else {
+            tips.push('No classes detected: verify that classroom and office air-conditioning follow the weekend/holiday setback schedule.');
+        }
+        tips.push('Check air-con set-points (24-25°C) and enforce door and window discipline in cooled spaces before the peak window.');
+
+        advisories.push({
+            severity: isPeakDay ? 'peak' : 'high',
+            label: kbrsDayLabel(i, dates),
+            title: isPeakDay ? 'Peak Load Warning' : 'High Load Advisory',
+            tips
+        });
+    });
+
+    if (peakAnalysis && peakAnalysis.minDayIndex != null
+        && peakAnalysis.minDayIndex !== peakAnalysis.peakDayIndex
+        && predictions.length > 1) {
+        advisories.push({
+            severity: 'low',
+            label: kbrsDayLabel(peakAnalysis.minDayIndex, dates),
+            title: 'Low-Load Window',
+            tips: [
+                `Lowest projected load (${peakAnalysis.minValue.toFixed(1)} kWh). Best window to schedule deferred maintenance, deep cleaning, or tasks displaced from the flagged high-load days.`
+            ]
+        });
+    }
+
+    const highDays = advisories.filter(a => a.severity === 'peak' || a.severity === 'high').length;
+    const normalCount = predictions.length - highDays;
+    if (normalCount > 0) {
+        advisories.push({
+            severity: 'normal',
+            label: null,
+            title: `Normal Operations (${normalCount} day${normalCount !== 1 ? 's' : ''})`,
+            tips: [
+                'Maintain standard HVAC setback schedules and keep evening shutdown checks in place.',
+                'Keep ventilation aligned with actual class hours and enforce end-of-day equipment shutdown routines.'
+            ]
+        });
+    }
+
+    return advisories;
+}
+
+function updateKbrsPanel(ctx, days) {
+    const container = document.getElementById('kbrsAdvisoryList');
+    if (!container) return;
+
+    const advisories = buildKbrsAdvisories(ctx, days);
+
+    if (advisories.length === 0) {
+        container.innerHTML = `<div class="anomaly-empty">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            <span>No advisories for this horizon</span>
+        </div>`;
+    } else {
+        const icons = {
+            peak: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+            high: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
+            low: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+            normal: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
+        };
+        container.innerHTML = advisories.map(a => `
+            <div class="kbrs-item ${a.severity}" tabindex="0">
+                <div class="kbrs-icon">${icons[a.severity]}</div>
+                <div class="kbrs-title">${a.label ? `${a.label} — ` : ''}${a.title}</div>
+                <div class="kbrs-tooltip" role="tooltip">
+                    <div class="kbrs-tooltip-title">${a.label ? `${a.label} — ` : ''}${a.title}</div>
+                    <ul class="kbrs-tips">${a.tips.map(t => `<li>${t}</li>`).join('')}</ul>
+                </div>
+            </div>`).join('');
+    }
+
+    const highCount = advisories.filter(a => a.severity === 'peak' || a.severity === 'high').length;
+
+    if (highCount > 0) {
+        logStatus(`KBRS issued ${highCount} high-load/peak advisory(ies) for the ${days}-day horizon`, 'success');
+    }
 }
 
 // ============================================================

@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="dashboard.css?v=4">
+    <link rel="stylesheet" href="dashboard.css?v=7">
 </head>
 <body>
     <!-- Sidebar -->
@@ -344,12 +344,29 @@
                     <canvas id="forecastChart"></canvas>
                 </div>
             </div>
+
+            <!-- KBRS Prescriptive Advisories -->
+            <div class="card kbrs-card">
+                <div class="card-header">
+                    <h3>KBRS Prescriptive Advisories</h3>
+                </div>
+                <div class="card-body">
+                    <div id="kbrsAdvisoryList" class="kbrs-list">
+                        <div class="anomaly-empty">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+                            </svg>
+                            <span>Generate a forecast to receive prescriptive advisories</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 
     <script src="config.js?v=20260829"></script>
     <script src="auth.js?v=20260829"></script>
-    <script src="dashboard-fixed.js?v=20260829"></script>
+    <script src="dashboard-fixed.js?v=20260917"></script>
     <script>
         function openApiDocs() {
             const base = (window.EnergyAIConfig && window.EnergyAIConfig.getApiBase)
