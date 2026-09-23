@@ -105,42 +105,27 @@ def _increase_pct(baseline, improved):
     return float(((improved - baseline) / denom) * 100.0)
 
 
-def _simple_baselines(train_series, test_series):
-    """Evaluate the simple baseline methods on the identical holdout window.
+def _lstm_baseline_metrics(model, X_val, y_val):
+    """Evaluate the standalone LSTM component on the identical holdout window.
 
-    All baselines are fitted on the same chronological train block and
-    scored on the same validation days as the hybrid model and ARIMA, so
-    every method in the model catalog is compared fairly.
+    This is the designated baseline: the same attention-LSTM architecture,
+    training data, and validation window as the hybrid model, WITHOUT
+    passing the result to the SVM cascade.
     """
-    train = np.asarray(train_series, dtype=np.float64)
-    test = np.asarray(test_series, dtype=np.float64)
-    if len(train) < 2 or len(test) < 1:
+    try:
+        lstm_pred = model.lstm_model.predict(X_val, verbose=0).flatten()
+        preds = model.consumption_scaler.inverse_transform(
+            lstm_pred.reshape(-1, 1)
+        ).flatten()
+        actual = model.consumption_scaler.inverse_transform(
+            y_val.reshape(-1, 1)
+        ).flatten()
+        return _core_metrics(
+            ForecastingMetrics.calculate_all_metrics(actual, preds)
+        )
+    except Exception as e:
+        print(f"[!] LSTM baseline evaluation failed: {e}")
         return None
-
-    mean_pred = np.full(len(test), float(train.mean()))
-
-    persistence_pred = np.empty(len(test), dtype=np.float64)
-    last = float(train[-1])
-    for i, actual in enumerate(test):
-        persistence_pred[i] = last
-        last = float(actual)
-
-    t_train = np.arange(len(train), dtype=np.float64)
-    slope, intercept = np.polyfit(t_train, train, 1)
-    t_test = np.arange(len(train), len(train) + len(test), dtype=np.float64)
-    linear_pred = intercept + slope * t_test
-
-    return {
-        "historical_mean": _core_metrics(
-            ForecastingMetrics.calculate_all_metrics(test, mean_pred)
-        ),
-        "persistence_naive": _core_metrics(
-            ForecastingMetrics.calculate_all_metrics(test, persistence_pred)
-        ),
-        "linear_regression": _core_metrics(
-            ForecastingMetrics.calculate_all_metrics(test, linear_pred)
-        ),
-    }
 
 
 def _get_split_index(n, train_ratio):
@@ -180,7 +165,7 @@ def _arima_univariate_benchmark(consumption, train_ratio=0.8):
     }
 
 
-def _hybrid_vs_arima_from_training(consumption, model):
+def _hybrid_vs_arima_from_training(consumption, model, X_val=None, y_val=None):
     """Compare trained hybrid model against ARIMA on the same validation horizon."""
     if (
         model.validation_start_index is None
@@ -209,6 +194,12 @@ def _hybrid_vs_arima_from_training(consumption, model):
     hybrid_full = ForecastingMetrics.calculate_all_metrics(hybrid_actual, hybrid_preds)
     hybrid_metrics = _core_metrics(hybrid_full)
 
+    lstm_metrics = (
+        _lstm_baseline_metrics(model, X_val, y_val)
+        if X_val is not None and y_val is not None
+        else None
+    )
+
     arima = ARIMABaseline()
     arima_eval = arima.evaluate(train_series, test_series)
     arima_metrics = arima_eval["metrics"]
@@ -229,10 +220,10 @@ def _hybrid_vs_arima_from_training(consumption, model):
     return {
         "metrics": {
             "hybrid": hybrid_metrics,
+            "lstm": lstm_metrics,
             "arima": arima_metrics,
         },
         "best_by_metric": best,
-        "simple_baselines": _simple_baselines(train_series, test_series),
         "improvement_hybrid_vs_arima": improvement,
         "arima_details": {
             "order": arima_eval["order"],
@@ -485,6 +476,7 @@ def _hybrid_vs_arima_from_ops():
         hybrid_metrics = _core_metrics(
             ForecastingMetrics.calculate_all_metrics(actual, preds)
         )
+        lstm_metrics = _lstm_baseline_metrics(model, X_val, y_val)
 
         val_start = split_idx + model.sequence_length
         train_series = consumption[:val_start]
@@ -510,10 +502,10 @@ def _hybrid_vs_arima_from_ops():
         return {
             "metrics": {
                 "hybrid": hybrid_metrics,
+                "lstm": lstm_metrics,
                 "arima": arima_metrics,
             },
             "best_by_metric": best,
-            "simple_baselines": _simple_baselines(train_series, test_series),
             "improvement_hybrid_vs_arima": improvement,
             "arima_details": {
                 "order": arima_eval["order"],
@@ -602,7 +594,27 @@ async def train_daily_model(data: DailyTrainingData):
             validation_split=0.2,
         )
 
-        baseline_comparison = _hybrid_vs_arima_from_training(consumption, model)
+        baseline_comparison = None
+        try:
+            features = model.prepare_features(
+                consumption, temperature, humidity, rainfall,
+                has_classes, day_of_week, is_weekend, fit_scalers=False,
+            )
+            targets = model.consumption_scaler.transform(
+                consumption.reshape(-1, 1)
+            ).flatten()
+            seq_X, seq_y = model.create_sequences(features, targets)
+            split_idx = int(len(seq_X) * 0.8)
+            baseline_comparison = _hybrid_vs_arima_from_training(
+                consumption, model,
+                X_val=seq_X[split_idx:],
+                y_val=seq_y[split_idx:],
+            )
+        except Exception as e:
+            print(f"[!] LSTM baseline sequence rebuild failed: {e}")
+
+        if baseline_comparison is None:
+            baseline_comparison = _hybrid_vs_arima_from_training(consumption, model)
 
         model_state["model"] = model
         model_state["is_trained"] = True

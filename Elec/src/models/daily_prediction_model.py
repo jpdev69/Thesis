@@ -565,7 +565,7 @@ class DailyEnergyPredictor:
         prediction = self.predict_batch(X)[0]
         return prediction
     
-    def predict_next_n_days(self, past_data, future_weather, future_schedule, n_days=7):
+    def predict_next_n_days(self, past_data, future_weather, future_schedule, n_days=7, lstm_only=False):
         """Predict electricity consumption for next N days with confidence.
         
         Args:
@@ -574,6 +574,8 @@ class DailyEnergyPredictor:
             future_weather: Dict with keys: temperature, humidity, rainfall (arrays of N days)
             future_schedule: Dict with keys: has_classes, day_of_week, is_weekend (arrays of N days)
             n_days: Number of days to predict
+            lstm_only: If True, predict with the standalone LSTM component only
+                (baseline mode — the result is not passed to the SVM cascade)
         
         Returns:
             dict with 'predictions', 'lower', 'upper', 'anomaly_flags', 'peak_analysis'
@@ -606,13 +608,22 @@ class DailyEnergyPredictor:
             
             X = features[-self.sequence_length:].reshape(1, self.sequence_length, -1)
             
-            # Predict with confidence
-            conf = self.predict_with_confidence(X, n_forward=20)
-            pred = conf['mean'][0]
-            
-            predictions.append(pred)
-            lower_bounds.append(conf['lower'][0])
-            upper_bounds.append(conf['upper'][0])
+            if lstm_only:
+                raw = self.lstm_model.predict(X, verbose=0).flatten()
+                pred = float(self.consumption_scaler.inverse_transform(
+                    raw.reshape(-1, 1)
+                ).flatten()[0])
+                predictions.append(pred)
+                lower_bounds.append(pred)
+                upper_bounds.append(pred)
+            else:
+                # Predict with confidence
+                conf = self.predict_with_confidence(X, n_forward=20)
+                pred = conf['mean'][0]
+                
+                predictions.append(pred)
+                lower_bounds.append(conf['lower'][0])
+                upper_bounds.append(conf['upper'][0])
             
             # Update current data with prediction for recursive forecasting
             current_consumption = np.append(current_consumption, pred)

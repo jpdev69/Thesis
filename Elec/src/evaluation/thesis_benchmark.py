@@ -129,12 +129,25 @@ def run_hybrid_vs_arima_benchmark(
     hybrid_full_metrics = ForecastingMetrics.calculate_all_metrics(test_consumption, hybrid_preds)
     hybrid_metrics = _core_metrics(hybrid_full_metrics)
 
+    lstm_result = hybrid_model.predict_next_n_days(
+        past_data,
+        future_weather,
+        future_schedule,
+        n_days=len(test_consumption),
+        lstm_only=True,
+    )
+    lstm_preds = np.array(lstm_result["predictions"], dtype=np.float64)
+    lstm_metrics = _core_metrics(
+        ForecastingMetrics.calculate_all_metrics(test_consumption, lstm_preds)
+    )
+
     arima_model = ARIMABaseline()
     arima_eval = arima_model.evaluate(train_consumption, test_consumption)
     arima_preds = np.array(arima_eval["predictions"], dtype=np.float64)
     arima_metrics = arima_eval["metrics"]
 
     comparison = {
+        "LSTM_Baseline": lstm_metrics,
         "Hybrid_LSTM_SVM": hybrid_metrics,
         "ARIMA": arima_metrics,
     }
@@ -145,6 +158,13 @@ def run_hybrid_vs_arima_benchmark(
         "MAE_reduction_pct": _reduction_pct(arima_metrics["MAE"], hybrid_metrics["MAE"]),
         "MAPE_reduction_pct": _reduction_pct(arima_metrics["MAPE"], hybrid_metrics["MAPE"]),
         "R2_improvement_pct": _increase_pct(arima_metrics["R2"], hybrid_metrics["R2"]),
+    }
+
+    improvement_vs_lstm = {
+        "RMSE_reduction_pct": _reduction_pct(lstm_metrics["RMSE"], hybrid_metrics["RMSE"]),
+        "MAE_reduction_pct": _reduction_pct(lstm_metrics["MAE"], hybrid_metrics["MAE"]),
+        "MAPE_reduction_pct": _reduction_pct(lstm_metrics["MAPE"], hybrid_metrics["MAPE"]),
+        "R2_improvement_pct": _increase_pct(lstm_metrics["R2"], hybrid_metrics["R2"]),
     }
 
     return {
@@ -158,6 +178,7 @@ def run_hybrid_vs_arima_benchmark(
         "metrics": comparison,
         "best_by_metric": best_by_metric,
         "improvement_hybrid_vs_arima": improvement,
+        "improvement_hybrid_vs_lstm": improvement_vs_lstm,
         "arima_details": {
             "order": arima_eval["order"],
             "used_fallback": bool(arima_eval["used_fallback"]),
@@ -166,6 +187,7 @@ def run_hybrid_vs_arima_benchmark(
         "predictions": {
             "actual": test_consumption.tolist(),
             "hybrid": hybrid_preds.tolist(),
+            "lstm": lstm_preds.tolist(),
             "arima": arima_preds.tolist(),
         },
     }

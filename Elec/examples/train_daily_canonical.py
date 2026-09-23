@@ -4,6 +4,7 @@ Executes the multivariate training plan:
 - chronological 85/15 split (train+validation block, locked holdout)
 - hybrid LSTM-SVM training (attention LSTM -> SVM cascade)
 - recursive multi-step forecast on the locked holdout
+  (hybrid and the standalone LSTM baseline, without the SVM cascade)
 - ARIMA baseline benchmark on the same split
 - 7-day sample forecast beyond the dataset (demonstration output)
 
@@ -13,6 +14,7 @@ Outputs:
 3) docs/daily_training_results.md
 """
 
+import random
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -22,6 +24,15 @@ sys.path.insert(0, str(ROOT))
 
 import numpy as np
 import pandas as pd
+
+SEED = 42
+random.seed(SEED)
+np.random.seed(SEED)
+try:
+    import tensorflow as tf
+    tf.random.set_seed(SEED)
+except ImportError:
+    pass
 
 from src.data.build_daily_canonical import has_classes_on
 from src.evaluation.metrics import ForecastingMetrics
@@ -86,17 +97,33 @@ def main():
     hybrid_preds = np.asarray(holdout["predictions"], dtype=float)
     hybrid_metrics = ForecastingMetrics.calculate_all_metrics(test["consumption"], hybrid_preds)
 
+    lstm_holdout = model.predict_next_n_days(
+        past,
+        {"temperature": test["temperature"], "humidity": test["humidity"], "rainfall": test["rainfall"]},
+        {"has_classes": test["has_classes"], "day_of_week": test["day_of_week"], "is_weekend": test["is_weekend"]},
+        n_days=len(test_df),
+        lstm_only=True,
+    )
+    lstm_preds = np.asarray(lstm_holdout["predictions"], dtype=float)
+    lstm_metrics = ForecastingMetrics.calculate_all_metrics(test["consumption"], lstm_preds)
+
     arima = ARIMABaseline()
     arima_eval = arima.evaluate(train["consumption"], test["consumption"])
     arima_metrics = arima_eval["metrics"]
 
     print("\n=== Locked holdout comparison (recursive multi-step) ===")
-    print(f"{'Metric':6} {'Hybrid':>12} {'ARIMA':>12}")
+    print(f"{'Metric':6} {'Hybrid':>12} {'LSTM':>12} {'ARIMA':>12}")
     for m in ["RMSE", "MAE", "MAPE", "R2"]:
-        print(f"{m:6} {hybrid_metrics[m]:>12.3f} {arima_metrics[m]:>12.3f}")
+        print(f"{m:6} {hybrid_metrics[m]:>12.3f} {lstm_metrics[m]:>12.3f} {arima_metrics[m]:>12.3f}")
+    cascade_rmse_pct = (
+        (lstm_metrics["RMSE"] - hybrid_metrics["RMSE"]) / lstm_metrics["RMSE"] * 100
+        if lstm_metrics["RMSE"] > 0 else 0.0
+    )
+    print(f"\nSVM cascade contribution: {cascade_rmse_pct:.1f}% lower RMSE vs the standalone LSTM baseline")
 
     metrics_df = pd.DataFrame([
         {"model": "Hybrid_LSTM_SVM", **{k: float(hybrid_metrics[k]) for k in ["RMSE", "MAE", "MAPE", "R2"]}},
+        {"model": "LSTM_Baseline", **{k: float(lstm_metrics[k]) for k in ["RMSE", "MAE", "MAPE", "R2"]}},
         {"model": "ARIMA", **{k: float(arima_metrics[k]) for k in ["RMSE", "MAE", "MAPE", "R2"]}},
     ])
     metrics_path = ROOT / "data" / "processed" / "hybrid_vs_arima_test_metrics.csv"
@@ -142,8 +169,10 @@ def main():
         "| Model | RMSE | MAE | MAPE | R2 |",
         "|---|---:|---:|---:|---:|",
         f"| Hybrid LSTM-SVM | {hybrid_metrics['RMSE']:.2f} | {hybrid_metrics['MAE']:.2f} | {hybrid_metrics['MAPE']:.2f} | {hybrid_metrics['R2']:.4f} |",
+        f"| LSTM (Baseline) | {lstm_metrics['RMSE']:.2f} | {lstm_metrics['MAE']:.2f} | {lstm_metrics['MAPE']:.2f} | {lstm_metrics['R2']:.4f} |",
         f"| ARIMA | {arima_metrics['RMSE']:.2f} | {arima_metrics['MAE']:.2f} | {arima_metrics['MAPE']:.2f} | {arima_metrics['R2']:.4f} |",
         "",
+        f"SVM cascade contribution: {cascade_rmse_pct:.1f}% lower RMSE than the standalone LSTM baseline.",
         f"ARIMA order: {arima_eval['order']} (fallback: {arima_eval['used_fallback']})",
         "",
         "## Thesis Target Check",
