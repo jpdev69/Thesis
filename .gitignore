@@ -18,9 +18,6 @@ Elec/data/daily_ops_dataset.csv
 # Private thesis notes/reports (do not publish)
 Elec/docs/
 
-# Ignore Elec source folder for this commit scope
-Elec/src/
-
 # Trained operational model artifacts
 Elec/models/
 
