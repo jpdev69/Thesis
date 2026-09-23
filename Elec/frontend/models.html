@@ -86,7 +86,7 @@
         <header class="header">
             <div class="header-left">
                 <h1>Model Comparison</h1>
-                <p class="subtitle">Served hybrid LSTM-SVM vs ARIMA baseline from the operational pipeline</p>
+                <p class="subtitle">Served hybrid LSTM-SVM vs ARIMA and simple baselines on the identical holdout window</p>
             </div>
             <div class="header-right">
                 <button class="btn-icon" id="themeToggle" onclick="toggleTheme()">
@@ -176,12 +176,12 @@
 
             <div class="card" style="grid-column: span 12;">
                 <div class="card-header">
-                    <h3>Model Comparison — Hybrid LSTM-SVM vs ARIMA</h3>
+                    <h3>Technical Model Catalog — Hybrid LSTM-SVM vs Baseline Methods</h3>
                     <span class="badge success" id="modelCatalogBadge">Loading...</span>
                 </div>
                 <div class="card-body">
                     <p style="margin: 0 0 16px; color: var(--text-secondary); line-height: 1.6;">
-                        Live comparison of the served operational model against the ARIMA baseline on the identical holdout window.
+                        Live comparison of the served operational model against ARIMA and the simple baseline methods on the identical holdout window. Every method is trained on the same chronological train block and scored on the same validation days.
                     </p>
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead>
@@ -191,14 +191,14 @@
                                 <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">RMSE</th>
                                 <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">MAE</th>
                                 <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">R² Score</th>
-                                <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">Improvement</th>
+                                <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">Improvement vs ARIMA</th>
                                 <th style="padding: 12px; font-size: 13px; color: var(--text-secondary);">Status</th>
                             </tr>
                         </thead>
                         <tbody id="modelCatalogTableBody">
                             <tr>
                                 <td colspan="7" style="padding: 40px; text-align: center; color: var(--text-secondary);">
-                                    Waiting for the backend operational comparison (Hybrid LSTM-SVM vs ARIMA)…
+                                    Waiting for the backend operational comparison (Hybrid LSTM-SVM vs baseline methods)…
                                 </td>
                             </tr>
                         </tbody>
@@ -226,9 +226,12 @@
                         <strong style="color: var(--text-primary);">Comparison Scope (Thesis Evidence):</strong>
                         <ul style="margin: 8px 0 0 0; padding-left: 20px;">
                             <li><strong>Hybrid LSTM-SVM:</strong> the served operational model (attention-LSTM &rarr; RBF-SVR cascade, <code>models/ops/daily</code>)</li>
-                            <li><strong>ARIMA:</strong> classical baseline, order selected via AIC, re-estimated on the same holdout window</li>
+                            <li><strong>ARIMA:</strong> classical statistical baseline, order selected via AIC, re-estimated on the same holdout window</li>
+                            <li><strong>Linear Regression:</strong> least-squares trend fit on the train block, extrapolated over the holdout</li>
+                            <li><strong>Persistence (Naive):</strong> one-step forecast, tomorrow equals the last observed value</li>
+                            <li><strong>Historical Mean:</strong> constant forecast of the train-block average</li>
                         </ul>
-                        Only these two models were evaluated for the thesis.
+                        All five methods are trained on the identical chronological train block and scored on the identical holdout window. The Improvement column expresses each method's RMSE reduction relative to the ARIMA baseline.
                     </div>
                 </div>
             </div>
@@ -294,7 +297,7 @@
             if (r2Bar) r2Bar.style.width = `${r2Percent}%`;
         }
 
-        function updateModelCatalog(hybridMetrics, arimaMetrics, arimaDetails, sourceLabel) {
+        function updateModelCatalog(hybridMetrics, arimaMetrics, arimaDetails, sourceLabel, simpleBaselines) {
             try {
                 if (!hybridMetrics || !arimaMetrics) return;
 
@@ -308,6 +311,10 @@
                 const rmseReduction = arimaRMSE > 0 ? ((arimaRMSE - hybridRMSE) / arimaRMSE * 100) : 0;
                 const r2Gain = hybridR2 - arimaR2;
 
+                const improvementVsArima = rmse => arimaRMSE > 0
+                    ? ((arimaRMSE - rmse) / arimaRMSE * 100)
+                    : 0;
+
                 const models = [
                     {
                         name: 'Hybrid LSTM-SVM (Current)',
@@ -315,7 +322,7 @@
                         rmse: hybridRMSE,
                         mae: hybridMAE,
                         r2: hybridR2,
-                        improvement: rmseReduction,
+                        improvement: improvementVsArima(hybridRMSE),
                         status: 'Active',
                         isCurrent: true
                     },
@@ -325,10 +332,32 @@
                         rmse: arimaRMSE,
                         mae: arimaMAE,
                         r2: arimaR2,
-                        improvement: -rmseReduction,
+                        improvement: improvementVsArima(arimaRMSE),
                         status: arimaDetails?.used_fallback ? 'Fallback' : 'Reference'
                     }
                 ];
+
+                if (simpleBaselines) {
+                    const baselineRows = [
+                        ['Linear Regression', 'linear_regression'],
+                        ['Persistence (Naive)', 'persistence_naive'],
+                        ['Historical Mean', 'historical_mean']
+                    ];
+                    baselineRows.forEach(([name, key]) => {
+                        const m = simpleBaselines[key];
+                        if (!m) return;
+                        const rmse = Number(m.RMSE || 0);
+                        models.push({
+                            name,
+                            type: 'Baseline',
+                            rmse,
+                            mae: Number(m.MAE || 0),
+                            r2: Number(m.R2 || 0),
+                            improvement: improvementVsArima(rmse),
+                            status: 'Reference'
+                        });
+                    });
+                }
 
                 models.sort((a, b) => b.r2 - a.r2);
 
@@ -345,11 +374,13 @@
                         ? '<span class="badge success">Active</span>'
                         : `<span class="badge" style="background: var(--gray-100); color: var(--text-secondary);">${model.status}</span>`;
 
-                    const improvementText = model.improvement >= 0
+                    const improvementText = model.improvement > 0
                         ? `+${model.improvement.toFixed(1)}%`
                         : `${model.improvement.toFixed(1)}%`;
 
-                    const improvementColor = model.improvement > 0 ? '#10b981' : '#ef4444';
+                    const improvementColor = model.improvement > 0
+                        ? '#10b981'
+                        : (model.improvement < 0 ? '#ef4444' : '#94a3b8');
                     const improvementStyle = model.isCurrent
                         ? `font-weight: 700; color: ${improvementColor};`
                         : `font-weight: 600; color: ${improvementColor};`;
@@ -435,7 +466,8 @@
                     comparison.metrics.hybrid,
                     comparison.metrics.arima,
                     comparison.arima_details || {},
-                    sourceLabel
+                    sourceLabel,
+                    comparison.simple_baselines || null
                 );
             } else if (badge) {
                 badge.textContent = 'Comparison unavailable';

@@ -105,6 +105,44 @@ def _increase_pct(baseline, improved):
     return float(((improved - baseline) / denom) * 100.0)
 
 
+def _simple_baselines(train_series, test_series):
+    """Evaluate the simple baseline methods on the identical holdout window.
+
+    All baselines are fitted on the same chronological train block and
+    scored on the same validation days as the hybrid model and ARIMA, so
+    every method in the model catalog is compared fairly.
+    """
+    train = np.asarray(train_series, dtype=np.float64)
+    test = np.asarray(test_series, dtype=np.float64)
+    if len(train) < 2 or len(test) < 1:
+        return None
+
+    mean_pred = np.full(len(test), float(train.mean()))
+
+    persistence_pred = np.empty(len(test), dtype=np.float64)
+    last = float(train[-1])
+    for i, actual in enumerate(test):
+        persistence_pred[i] = last
+        last = float(actual)
+
+    t_train = np.arange(len(train), dtype=np.float64)
+    slope, intercept = np.polyfit(t_train, train, 1)
+    t_test = np.arange(len(train), len(train) + len(test), dtype=np.float64)
+    linear_pred = intercept + slope * t_test
+
+    return {
+        "historical_mean": _core_metrics(
+            ForecastingMetrics.calculate_all_metrics(test, mean_pred)
+        ),
+        "persistence_naive": _core_metrics(
+            ForecastingMetrics.calculate_all_metrics(test, persistence_pred)
+        ),
+        "linear_regression": _core_metrics(
+            ForecastingMetrics.calculate_all_metrics(test, linear_pred)
+        ),
+    }
+
+
 def _get_split_index(n, train_ratio):
     split_idx = int(n * train_ratio)
     split_idx = max(split_idx, 21)
@@ -194,6 +232,7 @@ def _hybrid_vs_arima_from_training(consumption, model):
             "arima": arima_metrics,
         },
         "best_by_metric": best,
+        "simple_baselines": _simple_baselines(train_series, test_series),
         "improvement_hybrid_vs_arima": improvement,
         "arima_details": {
             "order": arima_eval["order"],
@@ -474,6 +513,7 @@ def _hybrid_vs_arima_from_ops():
                 "arima": arima_metrics,
             },
             "best_by_metric": best,
+            "simple_baselines": _simple_baselines(train_series, test_series),
             "improvement_hybrid_vs_arima": improvement,
             "arima_details": {
                 "order": arima_eval["order"],
